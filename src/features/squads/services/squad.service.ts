@@ -117,32 +117,15 @@ export const squadService = {
    * Request matchmaking lobby / find squad
    */
   async findSquad(dto: MatchmakingRequestDto): Promise<MatchmakingResult> {
-    try {
-      const response = await apiClient.post<MatchmakingResult>('/squads/matchmake', dto);
-      return response.data;
-    } catch {
-      // Mock matchmaking response
-      return {
-        lobbyId: `lobby_${Date.now()}`,
-        game: dto.gameId,
-        channel: 'ranked-solo-duo',
-        matchedCount: 3,
-        maxPlayers: 5,
-        voiceChannelUrl: 'https://gametrust.gg/voice/room-9182',
-        status: 'MATCHED',
-      };
-    }
+    const response = await apiClient.post<MatchmakingResult>('/squads/matchmake', dto);
+    return response.data;
   },
 
   /**
    * Invite a player to a lobby
    */
   async invitePlayer(playerId: string): Promise<{ success: boolean; message: string }> {
-    try {
-      const response = await apiClient.post<{ success: boolean; message: string }>(`/squads/invite/${playerId}`);
-      return response.data;
-    } catch {
-      return { success: true, message: `Invite dispatched to ${playerId}` };
-    }
+    const response = await apiClient.post<{ success: boolean; message: string }>(`/squads/invite/${playerId}`);
+    return response.data;
   },
 };

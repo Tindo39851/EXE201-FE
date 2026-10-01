@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Trophy, Users, Shield, Zap, Sparkles } from 'lucide-react';
+import { X, Trophy, Zap } from 'lucide-react';
 import type { Tournament } from '@/features/tournaments/types/tournament.types';
 import { formatCurrency } from '@/lib/utils';
+import { tournamentService } from '@/features/tournaments/services/tournament.service';
 
 interface TournamentRegisterModalProps {
   tournament: Tournament | null;
@@ -19,16 +20,28 @@ export const TournamentRegisterModal: React.FC<TournamentRegisterModalProps> = (
   const [teamName, setTeamName] = useState('');
   const [captainDiscord, setCaptainDiscord] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen || !tournament) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSuccess(true);
-    setTimeout(() => {
-      setIsSuccess(false);
-      onClose();
-    }, 2000);
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await tournamentService.registerTeam(tournament.id, { teamName, captainDiscord });
+      setIsSuccess(true);
+      window.setTimeout(() => {
+        setIsSuccess(false);
+        onClose();
+      }, 1400);
+    } catch (submissionError) {
+      setError(submissionError && typeof submissionError === 'object' && 'message' in submissionError
+        ? String(submissionError.message) : 'Registration failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -111,12 +124,15 @@ export const TournamentRegisterModal: React.FC<TournamentRegisterModalProps> = (
               </div>
             </div>
 
+            {error && <div role="alert" className="border border-gt-red/60 bg-gt-red/10 p-3 text-gt-red">{error}</div>}
+
             <button
               type="submit"
+              disabled={isSubmitting}
               className="w-full py-3.5 bg-gt-cyan hover:bg-white text-black font-orbitron text-xs font-black uppercase tracking-widest transition-all duration-300 cyber-cut shimmer-effect flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(0,240,255,0.4)] active:scale-95"
             >
               <Zap size={15} />
-              <span>CONFIRM BRACKET SEEDING</span>
+              <span>{isSubmitting ? 'REGISTERING...' : 'CONFIRM BRACKET SEEDING'}</span>
             </button>
           </form>
         )}

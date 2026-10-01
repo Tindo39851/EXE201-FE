@@ -25,6 +25,8 @@ export function useSquads(initialGame: string = 'ALL') {
   }, []);
 
   useEffect(() => {
+    // Refresh whenever the selected game changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPlayers(activeGame);
   }, [activeGame, fetchPlayers]);
 

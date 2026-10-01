@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
-import { X, Shield, Users, Trophy, Award, Mic } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Award, Mic } from 'lucide-react';
 import type { Clan } from '@/features/clans/types/clan.types';
+import { clanService } from '@/features/clans/services/clan.service';
 
 interface ClanRosterModalProps {
   clan: Clan | null;
@@ -11,7 +12,22 @@ interface ClanRosterModalProps {
 }
 
 export const ClanRosterModal: React.FC<ClanRosterModalProps> = ({ clan, isOpen, onClose }) => {
+  const [isJoining, setIsJoining] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
   if (!isOpen || !clan) return null;
+
+  const handleJoin = async () => {
+    setIsJoining(true);
+    setMessage(null);
+    try {
+      const response = await clanService.requestJoinClan(clan.id);
+      setMessage(response.message);
+    } catch (error) {
+      setMessage(error && typeof error === 'object' && 'message' in error ? String(error.message) : 'Join request failed');
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   const mockMembers = [
     { name: `${clan.tag}_COMMANDER`, role: 'Guild Leader / IGL', rank: 'Radiant #4', rep: 9.9, mic: true },
@@ -89,14 +105,13 @@ export const ClanRosterModal: React.FC<ClanRosterModalProps> = ({ clan, isOpen, 
           <span className="font-mono text-xs text-gt-text-dim">
             Minimum Requirement: <strong className="text-gt-yellow">{clan.req}</strong>
           </span>
+          {message && <span className="font-mono text-xs text-gt-cyan">{message}</span>}
           <button
-            onClick={() => {
-              alert('Application sent to Clan Leader!');
-              onClose();
-            }}
+            onClick={() => void handleJoin()}
+            disabled={isJoining}
             className="px-6 py-2.5 bg-gt-cyan hover:bg-white text-black font-orbitron text-xs font-bold uppercase tracking-wider cyber-cut-sm cursor-pointer shadow-[0_0_15px_rgba(0,240,255,0.4)]"
           >
-            Apply To Join Clan
+            {isJoining ? 'Sending...' : 'Apply To Join Clan'}
           </button>
         </div>
       </div>

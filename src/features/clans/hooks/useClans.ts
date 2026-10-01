@@ -30,6 +30,8 @@ export function useClans() {
   }, [selectedClan]);
 
   useEffect(() => {
+    // Data loading is intentionally triggered by filter changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchClans(activeTier, activeRegion);
   }, [activeTier, activeRegion, fetchClans]);
 

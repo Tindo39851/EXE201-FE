@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Orbitron, Rajdhani, Share_Tech_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/features/auth/components/AuthProvider";
 
 const orbitron = Orbitron({
   subsets: ["latin"],
@@ -35,7 +36,7 @@ export default function RootLayout({
       <body
         className={`${orbitron.variable} ${rajdhani.variable} ${shareTechMono.variable} bg-gt-bg text-gt-text font-rajdhani antialiased`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

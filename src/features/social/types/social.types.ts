@@ -1,5 +1,5 @@
 export interface SocialPost {
-  id: number;
+  id: string;
   username: string;
   initial: string;
   avatarColor: string;

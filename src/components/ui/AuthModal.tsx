@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Shield, Lock, Mail, User, Sparkles, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/features/auth/components/AuthProvider';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,18 +19,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [gameRole, setGameRole] = useState('IGL / Duelist');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { login, register } = useAuth();
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSuccess(true);
-    setTimeout(() => {
-      setIsSuccess(false);
-      onClose();
-    }, 1500);
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      if (mode === 'login') {
+        await login({ emailOrUsername: email, password });
+      } else {
+        await register({ username, email, password });
+      }
+      setIsSuccess(true);
+      window.setTimeout(() => {
+        setIsSuccess(false);
+        setPassword('');
+        onClose();
+      }, 900);
+    } catch (submissionError) {
+      const message = submissionError && typeof submissionError === 'object' && 'message' in submissionError
+        ? String(submissionError.message)
+        : 'Authentication failed';
+      setError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -124,16 +144,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <div>
               <label className="block text-gt-text-dim uppercase tracking-wider mb-1">
-                Email Address
+                {mode === 'login' ? 'Email or Username' : 'Email Address'}
               </label>
               <div className="relative">
                 <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gt-text-dim" />
                 <input
-                  type="email"
+                  type={mode === 'login' ? 'text' : 'email'}
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="player@gametrust.gg"
+                  placeholder={mode === 'login' ? 'demo or player@gametrust.gg' : 'player@gametrust.gg'}
                   className="w-full bg-[#080B12] border border-gt-border hover:border-gt-cyan focus:border-gt-cyan focus:outline-none pl-9 pr-3 py-2.5 text-white rounded-sm transition-colors"
                 />
               </div>
@@ -156,8 +176,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
 
+            {error && (
+              <div role="alert" className="border border-gt-red/60 bg-gt-red/10 px-3 py-2 text-gt-red">
+                {error}
+              </div>
+            )}
+
             <button
               type="submit"
+              disabled={isSubmitting}
               className={`w-full py-3.5 mt-2 font-orbitron text-xs font-black uppercase tracking-widest transition-all duration-300 cyber-cut shimmer-effect flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
                 mode === 'login'
                   ? 'bg-gt-cyan text-black hover:bg-white glow-cyan'
@@ -165,7 +192,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               }`}
             >
               <Sparkles size={14} />
-              <span>{mode === 'login' ? 'AUTHORIZE ACCESS' : 'CONFIRM & JOIN'}</span>
+              <span>{isSubmitting ? 'CONNECTING...' : mode === 'login' ? 'AUTHORIZE ACCESS' : 'CONFIRM & JOIN'}</span>
               <ArrowRight size={14} />
             </button>
           </form>

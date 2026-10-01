@@ -29,6 +29,8 @@ export function useTournaments(initialStatus: TournamentStatus | 'ALL' = 'ALL') 
   }, [selectedTournament]);
 
   useEffect(() => {
+    // Refresh whenever the tournament status filter changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTournaments(activeTab);
   }, [activeTab, fetchTournaments]);
 
@@ -45,8 +47,8 @@ export function useTournaments(initialStatus: TournamentStatus | 'ALL' = 'ALL') 
     }
   };
 
-  const registerSquad = async (tournamentId: string) => {
-    return await tournamentService.registerTeam(tournamentId);
+  const registerSquad = async (tournamentId: string, teamData: { teamName: string; captainDiscord: string }) => {
+    return await tournamentService.registerTeam(tournamentId, teamData);
   };
 
   return {

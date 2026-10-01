@@ -73,7 +73,7 @@ const colorStyles = {
 
 interface PlayerCardComponentProps {
   player: PlayerProfile;
-  onInvite?: (playerId: string) => Promise<void> | void;
+  onInvite?: (playerId: string) => Promise<unknown> | void;
 }
 
 export const PlayerCard: React.FC<PlayerCardComponentProps> = ({ player, onInvite }) => {

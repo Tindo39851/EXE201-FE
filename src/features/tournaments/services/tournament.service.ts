@@ -108,12 +108,8 @@ export const tournamentService = {
     }
   },
 
-  async registerTeam(tournamentId: string, teamData?: any): Promise<{ success: boolean; message: string }> {
-    try {
-      const response = await apiClient.post(`/tournaments/${tournamentId}/register`, teamData);
-      return response.data;
-    } catch {
-      return { success: true, message: 'Squad successfully registered for tournament' };
-    }
+  async registerTeam(tournamentId: string, teamData: { teamName: string; captainDiscord: string }): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post<{ success: boolean; message: string }>(`/tournaments/${tournamentId}/register`, teamData);
+    return response.data;
   },
 };

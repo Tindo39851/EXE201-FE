@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ChevronRight, Zap, Flame, Radio, Volume2, Shield, Crosshair } from 'lucide-react';
+import { ChevronRight, Zap, Flame, Crosshair } from 'lucide-react';
 
 export default function Hero() {
   return (

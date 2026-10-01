@@ -13,7 +13,7 @@ const RINGS = [
 ];
 
 export const ReputationSection: React.FC = () => {
-  const { metrics, topPlayers, isLoading } = useReputation();
+  const { metrics, topPlayers } = useReputation();
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto">

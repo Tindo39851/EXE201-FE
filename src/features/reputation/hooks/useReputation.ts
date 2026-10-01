@@ -34,6 +34,8 @@ export function useReputation() {
   }, []);
 
   useEffect(() => {
+    // Initial client-side API hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, [loadData]);
 

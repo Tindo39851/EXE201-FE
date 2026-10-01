@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Sparkles } from 'lucide-react';
+import { Bell, LogOut, Sparkles } from 'lucide-react';
 import { AuthModal } from '@/components/ui/AuthModal';
+import { useAuth } from '@/features/auth/components/AuthProvider';
 
 export default function Navbar() {
   const pathname = usePathname();
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const { user, logout } = useAuth();
 
   const navLinks = [
     { name: 'Squad Finder', href: '/squad-finder' },
@@ -26,6 +28,7 @@ export default function Navbar() {
   return (
     <>
       <AuthModal
+        key={authMode}
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
         defaultMode={authMode}
@@ -101,20 +104,37 @@ export default function Navbar() {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gt-magenta rounded-full shadow-[0_0_8px_#FF007F]"></span>
             </button>
 
-            <button
-              onClick={() => handleOpenAuth('login')}
-              className="hidden sm:inline-flex items-center justify-center px-4 py-1.5 border border-gt-border-bright text-gt-text hover:text-gt-cyan hover:border-gt-cyan font-orbitron text-xs font-semibold uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_12px_rgba(0,240,255,0.25)] cyber-cut-sm cursor-pointer"
-            >
-              Sign In
-            </button>
-
-            <button
-              onClick={() => handleOpenAuth('register')}
-              className="relative px-4 sm:px-5 py-2 bg-gradient-to-r from-gt-magenta to-pink-600 hover:from-gt-magenta hover:to-gt-purple text-white font-orbitron text-xs font-bold uppercase tracking-wider transition-all duration-300 glow-magenta cyber-cut shimmer-effect flex items-center gap-1.5 active:scale-95 cursor-pointer"
-            >
-              <Sparkles size={13} className="text-white animate-spin" style={{ animationDuration: '6s' }} />
-              <span>Create Account</span>
-            </button>
+            {user ? (
+              <>
+                <div className="hidden sm:flex flex-col items-end font-mono leading-tight">
+                  <span className="text-xs text-gt-cyan font-bold">{user.username}</span>
+                  <span className="text-[9px] text-gt-text-dim">{user.role} • {user.reputationScore} REP</span>
+                </div>
+                <button
+                  onClick={() => void logout()}
+                  aria-label="Sign out"
+                  className="p-2 border border-gt-border text-gt-text-dim hover:text-gt-red hover:border-gt-red transition-colors cursor-pointer"
+                >
+                  <LogOut size={16} />
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleOpenAuth('login')}
+                  className="hidden sm:inline-flex items-center justify-center px-4 py-1.5 border border-gt-border-bright text-gt-text hover:text-gt-cyan hover:border-gt-cyan font-orbitron text-xs font-semibold uppercase tracking-wider transition-all duration-300 hover:shadow-[0_0_12px_rgba(0,240,255,0.25)] cyber-cut-sm cursor-pointer"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => handleOpenAuth('register')}
+                  className="relative px-4 sm:px-5 py-2 bg-gradient-to-r from-gt-magenta to-pink-600 hover:from-gt-magenta hover:to-gt-purple text-white font-orbitron text-xs font-bold uppercase tracking-wider transition-all duration-300 glow-magenta cyber-cut shimmer-effect flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                >
+                  <Sparkles size={13} className="text-white animate-spin" style={{ animationDuration: '6s' }} />
+                  <span>Create Account</span>
+                </button>
+              </>
+            )}
           </div>
 
         </div>

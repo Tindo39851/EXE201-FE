@@ -3,7 +3,7 @@ import type { SocialPost, OnlinePlayer, TrendingTag, CreatePostDto } from '../ty
 
 const MOCK_POSTS: SocialPost[] = [
   {
-    id: 1,
+    id: 'mock_1',
     username: 'AXIOM_V',
     initial: 'A',
     avatarColor: 'bg-gt-red text-white border-gt-red/60',
@@ -19,7 +19,7 @@ const MOCK_POSTS: SocialPost[] = [
     bottomGradient: 'from-gt-cyan via-white/50 to-transparent',
   },
   {
-    id: 2,
+    id: 'mock_2',
     username: 'NULLSHIFT',
     initial: 'N',
     avatarColor: 'bg-gt-green text-black border-gt-green/60',
@@ -35,7 +35,7 @@ const MOCK_POSTS: SocialPost[] = [
     bottomGradient: 'from-gt-magenta via-white/50 to-transparent',
   },
   {
-    id: 3,
+    id: 'mock_3',
     username: 'CR4WLER',
     initial: 'C',
     avatarColor: 'bg-gt-yellow text-black border-gt-yellow/60',
@@ -51,7 +51,7 @@ const MOCK_POSTS: SocialPost[] = [
     bottomGradient: 'from-gt-yellow via-white/50 to-transparent',
   },
   {
-    id: 4,
+    id: 'mock_4',
     username: 'GHOST_RIG',
     initial: 'G',
     avatarColor: 'bg-gt-orange text-white border-gt-orange/60',
@@ -99,36 +99,13 @@ export const socialService = {
   },
 
   async createPost(dto: CreatePostDto): Promise<SocialPost> {
-    try {
-      const response = await apiClient.post<SocialPost>('/social/posts', dto);
-      return response.data;
-    } catch {
-      return {
-        id: Date.now(),
-        username: 'YOU',
-        initial: 'U',
-        avatarColor: 'bg-gt-cyan text-black border-gt-cyan',
-        timezone: 'NOW',
-        tag: dto.tag || 'LFG BROADCAST',
-        tagColor: 'text-gt-cyan border-gt-cyan/50 bg-gt-cyan/10',
-        game: dto.game || 'Active',
-        time: 'Just now',
-        content: dto.content,
-        likes: 1,
-        liked: true,
-        comments: 0,
-        bottomGradient: 'from-gt-cyan to-gt-magenta',
-      };
-    }
+    const response = await apiClient.post<SocialPost>('/social/posts', dto);
+    return response.data;
   },
 
-  async toggleLikePost(postId: number): Promise<{ liked: boolean; count: number }> {
-    try {
-      const response = await apiClient.post<{ liked: boolean; count: number }>(`/social/posts/${postId}/like`);
-      return response.data;
-    } catch {
-      return { liked: true, count: 1 };
-    }
+  async toggleLikePost(postId: string): Promise<{ liked: boolean; count: number }> {
+    const response = await apiClient.post<{ liked: boolean; count: number }>(`/social/posts/${postId}/like`);
+    return response.data;
   },
 
   async getOnlinePlayers(): Promise<OnlinePlayer[]> {

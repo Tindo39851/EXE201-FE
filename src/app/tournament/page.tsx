@@ -15,7 +15,6 @@ export default function TournamentPage() {
     activeTab,
     setActiveTab,
     selectTournamentById,
-    registerSquad,
   } = useTournaments('ALL');
 
   return (
@@ -128,7 +127,6 @@ export default function TournamentPage() {
             {selectedTournament && (
               <TournamentDetailCard
                 tournament={selectedTournament}
-                onRegister={registerSquad}
               />
             )}
 
