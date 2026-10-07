@@ -34,7 +34,7 @@ export function useSocialFeed() {
     loadFeed();
   }, [loadFeed]);
 
-  const toggleLike = async (postId: string) => {
+  const toggleLike = async (postId: string | number) => {
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         return {
@@ -59,6 +59,8 @@ export function useSocialFeed() {
     try {
       const newPost = await socialService.createPost({ content });
       setPosts(prev => [newPost, ...prev]);
+    } catch (err: any) {
+      alert(err.message || 'Failed to publish post');
     } finally {
       setIsPosting(false);
     }

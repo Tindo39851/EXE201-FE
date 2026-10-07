@@ -3,12 +3,16 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
-import { ArrowLeft, ShieldCheck, Award, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Activity, Award, ShieldAlert, Plus } from 'lucide-react';
 import { useReputation } from '@/features/reputation';
+import { ReviewModal } from '@/components/ui/ReviewModal';
+import { ReportModal } from '@/components/ui/ReportModal';
 
 export default function ReputationPage() {
   const [activeTab, setActiveTab] = useState<'Overview' | 'Reports' | 'Reviews' | 'Leaderboard'>('Overview');
-  const { metrics, reports, reviews } = useReputation();
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const { metrics, reports, reviews, isLoading, refetch } = useReputation();
 
   return (
     <div className="min-h-screen bg-gt-bg text-gt-text font-rajdhani selection:bg-gt-cyan selection:text-black">
@@ -158,9 +162,17 @@ export default function ReputationPage() {
                     <ShieldAlert size={16} className="text-gt-red" />
                   </h2>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-gt-green animate-pulse"></span>
-                  <span className="font-mono text-xs text-gt-green uppercase tracking-wide font-semibold">Monitoring Active</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setReportModalOpen(true)}
+                    className="px-2.5 py-1 bg-gt-red/15 hover:bg-gt-red text-gt-red hover:text-white border border-gt-red/60 text-[11px] font-mono uppercase tracking-wider rounded-sm cyber-cut-sm transition-all flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus size={12} /> Report
+                  </button>
+                  <div className="hidden sm:flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-gt-green animate-pulse"></span>
+                    <span className="font-mono text-xs text-gt-green uppercase tracking-wide font-semibold">Monitoring Active</span>
+                  </div>
                 </div>
               </div>
 
@@ -180,14 +192,22 @@ export default function ReputationPage() {
 
             {/* Recent Reviews */}
             <div className="bg-[#0D121B] border border-gt-border border-l-4 border-l-gt-magenta p-6 rounded-sm">
-              <div className="mb-6 pb-2 border-b border-gt-border/60">
-                <div className="section-label text-gt-magenta mb-1 font-mono text-[10px] uppercase tracking-wide">
-                  REV_LIVE // COMMUNITY REVIEWS
+              <div className="flex justify-between items-start mb-6 pb-2 border-b border-gt-border/60">
+                <div>
+                  <div className="section-label text-gt-magenta mb-1 font-mono text-[10px] uppercase tracking-wide">
+                    REV_LIVE // COMMUNITY REVIEWS
+                  </div>
+                  <h2 className="font-orbitron text-base font-bold text-white uppercase flex items-center gap-2">
+                    RECENT REVIEWS
+                    <Award size={16} className="text-gt-yellow" />
+                  </h2>
                 </div>
-                <h2 className="font-orbitron text-base font-bold text-white uppercase flex items-center gap-2">
-                  RECENT REVIEWS
-                  <Award size={16} className="text-gt-yellow" />
-                </h2>
+                <button
+                  onClick={() => setReviewModalOpen(true)}
+                  className="px-2.5 py-1 bg-gt-magenta/15 hover:bg-gt-magenta text-gt-magenta hover:text-white border border-gt-magenta/60 text-[11px] font-mono uppercase tracking-wider rounded-sm cyber-cut-sm transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus size={12} /> Endorse
+                </button>
               </div>
 
               <div className="space-y-5">
@@ -208,6 +228,18 @@ export default function ReputationPage() {
 
           </div>
         )}
+
+        <ReviewModal
+          isOpen={reviewModalOpen}
+          onClose={() => setReviewModalOpen(false)}
+          onSuccess={() => refetch()}
+        />
+
+        <ReportModal
+          isOpen={reportModalOpen}
+          onClose={() => setReportModalOpen(false)}
+          onSuccess={() => refetch()}
+        />
 
       </main>
     </div>
@@ -324,7 +356,7 @@ function ReviewRow({ user, stars, quote, author, time, badge, badgeColor }: { us
         </div>
       </div>
       <p className="font-rajdhani text-sm text-gt-text-dim italic mb-1.5 leading-relaxed">
-        &ldquo;{quote}&rdquo;
+        "{quote}"
       </p>
       <div className="font-mono text-[11px] text-gt-text-dim/80">
         by <span className="text-gt-text">{author}</span> • {time}

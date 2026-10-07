@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Orbitron, Rajdhani, Share_Tech_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/features/auth/components/AuthProvider";
 
 const orbitron = Orbitron({
   subsets: ["latin"],
@@ -25,6 +24,8 @@ export const metadata: Metadata = {
   title: "GameTrust — Find Your Squad",
   description: "The Premier Competitive Player Matching Platform",
 };
+
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export default function RootLayout({
   children,

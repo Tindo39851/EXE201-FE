@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Trophy, Zap } from 'lucide-react';
+import { X, Trophy, Users, Shield, Zap, Sparkles } from 'lucide-react';
 import type { Tournament } from '@/features/tournaments/types/tournament.types';
 import { formatCurrency } from '@/lib/utils';
+
 import { tournamentService } from '@/features/tournaments/services/tournament.service';
 
 interface TournamentRegisterModalProps {
@@ -20,27 +21,26 @@ export const TournamentRegisterModal: React.FC<TournamentRegisterModalProps> = (
   const [teamName, setTeamName] = useState('');
   const [captainDiscord, setCaptainDiscord] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen || !tournament) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+    setErrorMsg(null);
+    setSubmitting(true);
     try {
       await tournamentService.registerTeam(tournament.id, { teamName, captainDiscord });
       setIsSuccess(true);
-      window.setTimeout(() => {
+      setTimeout(() => {
         setIsSuccess(false);
         onClose();
-      }, 1400);
-    } catch (submissionError) {
-      setError(submissionError && typeof submissionError === 'object' && 'message' in submissionError
-        ? String(submissionError.message) : 'Registration failed');
+      }, 1500);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Registration failed');
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
@@ -83,6 +83,11 @@ export const TournamentRegisterModal: React.FC<TournamentRegisterModalProps> = (
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 font-mono text-xs">
+            {errorMsg && (
+              <div className="p-2.5 bg-gt-red/10 border border-gt-red/40 text-gt-red rounded-sm text-[11px] animate-fadeIn">
+                {errorMsg}
+              </div>
+            )}
             <div>
               <label className="block text-gt-text-dim uppercase tracking-wider mb-1">
                 Squad / Team Name
@@ -124,15 +129,12 @@ export const TournamentRegisterModal: React.FC<TournamentRegisterModalProps> = (
               </div>
             </div>
 
-            {error && <div role="alert" className="border border-gt-red/60 bg-gt-red/10 p-3 text-gt-red">{error}</div>}
-
             <button
               type="submit"
-              disabled={isSubmitting}
               className="w-full py-3.5 bg-gt-cyan hover:bg-white text-black font-orbitron text-xs font-black uppercase tracking-widest transition-all duration-300 cyber-cut shimmer-effect flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(0,240,255,0.4)] active:scale-95"
             >
               <Zap size={15} />
-              <span>{isSubmitting ? 'REGISTERING...' : 'CONFIRM BRACKET SEEDING'}</span>
+              <span>CONFIRM BRACKET SEEDING</span>
             </button>
           </form>
         )}

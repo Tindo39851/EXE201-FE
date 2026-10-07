@@ -108,8 +108,24 @@ export const tournamentService = {
     }
   },
 
-  async registerTeam(tournamentId: string, teamData: { teamName: string; captainDiscord: string }): Promise<{ success: boolean; message: string }> {
-    const response = await apiClient.post<{ success: boolean; message: string }>(`/tournaments/${tournamentId}/register`, teamData);
-    return response.data;
+  async registerTeam(tournamentId: string, teamData?: any): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await apiClient.post(`/tournaments/${tournamentId}/register`, teamData);
+      return response.data;
+    } catch (err: any) {
+      if (err?.statusCode === 401) {
+        throw new Error('Please sign in to register your squad for this tournament');
+      }
+      throw new Error(err?.message || 'Failed to register for tournament');
+    }
+  },
+
+  async getMyTournaments(): Promise<any[]> {
+    try {
+      const response = await apiClient.get<any[]>('/tournaments/my');
+      return response.data || [];
+    } catch {
+      return [];
+    }
   },
 };
