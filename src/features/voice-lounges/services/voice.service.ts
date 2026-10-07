@@ -47,12 +47,20 @@ interface ApiChatMessage {
 }
 
 const INITIAL_GAMES: GameHubItem[] = [
-  { id: 'all', name: 'ALL GAMES', shortName: 'ALL', count: 12 },
-  { id: 'league-of-legends', name: 'League of Legends', shortName: 'LOL', count: 5 },
+  { id: 'all', name: 'ALL GAMES', shortName: 'ALL', count: 8 },
+  { id: 'league-of-legends', name: 'League of Legends', shortName: 'LOL', count: 2 },
   { id: 'free-fire', name: 'Free Fire', shortName: 'FF', count: 2 },
-  { id: 'valorant', name: 'Valorant', shortName: 'VAL', count: 3 },
-  { id: 'cs2', name: 'CS2', shortName: 'CS2', count: 2 },
+  { id: 'lien-quan', name: 'Liên Quân', shortName: 'AOV', count: 2 },
+  { id: 'valorant', name: 'Valorant', shortName: 'VAL', count: 2 },
 ];
+
+const SUPPORTED_GAME_IDS = new Set(['free-fire', 'league-of-legends', 'lien-quan', 'valorant']);
+const SUPPORTED_ROOM_IDS = new Set([
+  'room-lol-1', 'room-lol-2',
+  'room-ff-1', 'room-ff-2',
+  'room-aov-1', 'room-aov-2',
+  'room-val-1', 'room-val-2',
+]);
 
 const INITIAL_ROOMS: VoiceRoom[] = [
   {
@@ -215,10 +223,10 @@ const INITIAL_ROOMS: VoiceRoom[] = [
     ],
   },
   {
-    id: 'room-cs2-1',
-    gameId: 'cs2',
-    gameName: 'CS2',
-    name: 'Late night Mirage executes',
+    id: 'room-aov-1',
+    gameId: 'lien-quan',
+    gameName: 'Liên Quân',
+    name: 'Leo rank Cao Thủ',
     tag: 'Climbing',
     visibility: 'Public',
     ping: 16,
@@ -232,10 +240,10 @@ const INITIAL_ROOMS: VoiceRoom[] = [
     ],
   },
   {
-    id: 'room-cs2-2',
-    gameId: 'cs2',
-    gameName: 'CS2',
-    name: 'Faceit level 8+ grind',
+    id: 'room-aov-2',
+    gameId: 'lien-quan',
+    gameName: 'Liên Quân',
+    name: 'Đấu thường giao lưu',
     tag: 'Rank Tryhard',
     visibility: 'Public',
     ping: 24,
@@ -322,7 +330,9 @@ const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
   ],
 };
 
-let localRooms: VoiceRoom[] = [...INITIAL_ROOMS];
+let localRooms: VoiceRoom[] = INITIAL_ROOMS.filter(room =>
+  SUPPORTED_GAME_IDS.has(room.gameId) && SUPPORTED_ROOM_IDS.has(room.id)
+);
 const localMessages: Record<string, ChatMessage[]> = { ...INITIAL_MESSAGES };
 
 export const voiceService = {

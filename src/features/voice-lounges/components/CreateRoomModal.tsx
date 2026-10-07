@@ -13,8 +13,8 @@ interface CreateRoomModalProps {
 const AVAILABLE_GAMES = [
   { id: 'league-of-legends', name: 'League of Legends' },
   { id: 'free-fire', name: 'Free Fire' },
+  { id: 'lien-quan', name: 'Liên Quân' },
   { id: 'valorant', name: 'Valorant' },
-  { id: 'cs2', name: 'Counter-Strike 2' },
 ];
 
 const AVAILABLE_TAGS: RoomTag[] = [
