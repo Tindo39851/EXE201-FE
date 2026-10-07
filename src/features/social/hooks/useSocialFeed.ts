@@ -29,10 +29,12 @@ export function useSocialFeed() {
   }, [activeTab]);
 
   useEffect(() => {
+    // Refresh whenever the selected feed category changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFeed();
   }, [loadFeed]);
 
-  const toggleLike = async (postId: number) => {
+  const toggleLike = async (postId: string) => {
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         return {

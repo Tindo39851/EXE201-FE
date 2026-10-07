@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GameTrust Frontend
 
-## Getting Started
+Next.js 16 frontend for GameTrust. It is connected to the Spring Boot API for authentication, player discovery, matchmaking, tournaments, clans, reputation, and social data.
 
-First, run the development server:
+## Run
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```powershell
+npm.cmd install
+npm.cmd run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`. The backend must be available at `http://localhost:5000` and MongoDB must be running.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+To override the backend URL, create `.env.local`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+```
 
-## Learn More
+## API integration
 
-To learn more about Next.js, take a look at the following resources:
+- Axios automatically attaches the access token from local storage.
+- Spring Boot `{ success, message, data }` envelopes are unwrapped centrally.
+- A `401` triggers one refresh-token rotation and retries the original request.
+- Failed refresh clears the local session.
+- Login, registration, session restore, logout, and navbar identity use the shared `AuthProvider`.
+- Public screens load seeded data from MongoDB-backed APIs.
+- Matchmaking, invitations, tournament registration, clan join requests, social posting, and likes call authenticated APIs and no longer report fake success.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Development accounts seeded by the backend:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Role | Username | Password |
+|---|---|---|
+| MEMBER | `demo` | `Demo123!` |
+| ADMIN | `admin` | `Admin123!` |
 
-## Deploy on Vercel
+## Validation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```powershell
+npm.cmd run build
+npm.cmd run lint
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The production build checks all App Router pages: `/`, `/squad-finder`, `/tournament`, `/clan`, and `/reputation`.

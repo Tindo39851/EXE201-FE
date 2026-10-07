@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Hash, Mic, ChevronDown, Check, Zap, Radio, Search, Shield, Volume2, UserCheck } from 'lucide-react';
+import { Hash, Mic, ChevronDown, Check, Zap, Radio, Volume2, UserCheck } from 'lucide-react';
 import { useSquadMatchmaking } from '../hooks/useSquadMatchmaking';
 
 const MY_ROLES = ['Top', 'Jungle', 'Mid', 'Bot', 'Support', 'Fill'];
@@ -24,7 +24,7 @@ export const DiscordLobby: React.FC = () => {
   const [neededRoles, setNeededRoles] = useState<string[]>(['Jungle', 'Support']);
   const [micRequired, setMicRequired] = useState(true);
 
-  const { isSearching, matchResult, startMatchmaking, resetMatchmaking } = useSquadMatchmaking();
+  const { isSearching, matchResult, error, startMatchmaking, resetMatchmaking } = useSquadMatchmaking();
 
   const toggleNeededRole = (role: string) => {
     if (role === 'Any') {
@@ -462,6 +462,11 @@ export const DiscordLobby: React.FC = () => {
                 >
                   Match Again
                 </button>
+              </div>
+            )}
+            {error && (
+              <div role="alert" className="p-3 border border-gt-red/60 bg-gt-red/10 text-gt-red font-mono text-xs">
+                {error}. Sign in before starting protected matchmaking.
               </div>
             )}
           </div>

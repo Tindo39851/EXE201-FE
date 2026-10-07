@@ -8,7 +8,6 @@ import { TournamentRegisterModal } from '@/components/ui/TournamentRegisterModal
 
 interface TournamentDetailCardProps {
   tournament: Tournament;
-  onRegister?: (tournamentId: string) => Promise<any> | void;
 }
 
 export const TournamentDetailCard: React.FC<TournamentDetailCardProps> = ({

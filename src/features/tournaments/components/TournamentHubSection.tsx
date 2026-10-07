@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Trophy, Clock, Users, ArrowRight, Sparkles } from 'lucide-react';
+import { Clock, Users, ArrowRight, Sparkles } from 'lucide-react';
 import { useTournaments } from '../hooks/useTournaments';
 import { formatCurrency } from '@/lib/utils';
 
