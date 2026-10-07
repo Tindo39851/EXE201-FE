@@ -11,6 +11,7 @@ export interface VoiceMember {
   isSpeaking?: boolean;
   isCurrentUser?: boolean;
   joinedAt?: string;
+  connectionQuality?: string;
 }
 
 export type RoomTag = 
@@ -68,4 +69,12 @@ export interface CreateRoomDto {
   tag?: RoomTag;
   capacity: number;
   visibility?: RoomVisibility;
+}
+
+export interface VoiceJoinCredentials {
+  serverUrl: string;
+  participantToken: string;
+  expiresInSeconds: number;
+  roomId: string;
+  livekitRoomName: string;
 }
