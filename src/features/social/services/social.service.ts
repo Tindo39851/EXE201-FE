@@ -102,7 +102,10 @@ export const socialService = {
     try {
       const response = await apiClient.post<SocialPost>('/social/posts', dto);
       return response.data;
-    } catch {
+    } catch (err: any) {
+      if (err?.statusCode === 401) {
+        throw new Error('Please sign in to publish a post');
+      }
       return {
         id: Date.now(),
         username: 'YOU',

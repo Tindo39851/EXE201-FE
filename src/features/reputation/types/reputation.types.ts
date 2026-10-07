@@ -43,3 +43,16 @@ export interface TopRepPlayer {
   rep: string;
   color: string;
 }
+
+export interface CreateReviewDto {
+  user: string;
+  stars: number;
+  quote: string;
+  badge?: string;
+}
+
+export interface CreateReportDto {
+  user: string;
+  type: string;
+  reason?: string;
+}

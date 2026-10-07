@@ -73,7 +73,7 @@ const colorStyles = {
 
 interface PlayerCardComponentProps {
   player: PlayerProfile;
-  onInvite?: (playerId: string) => Promise<void> | void;
+  onInvite?: (playerId: string) => Promise<unknown> | unknown;
 }
 
 export const PlayerCard: React.FC<PlayerCardComponentProps> = ({ player, onInvite }) => {
@@ -81,11 +81,15 @@ export const PlayerCard: React.FC<PlayerCardComponentProps> = ({ player, onInvit
   const currentStyle = colorStyles[player.accentColor] || colorStyles.cyan;
 
   const handleInvite = async () => {
-    if (onInvite) {
-      await onInvite(player.id);
+    try {
+      if (onInvite) {
+        await onInvite(player.id);
+      }
+      setInvited(true);
+      setTimeout(() => setInvited(false), 3000);
+    } catch (err: any) {
+      alert(err?.message || 'Please log in to invite players');
     }
-    setInvited(true);
-    setTimeout(() => setInvited(false), 3000);
   };
 
   return (

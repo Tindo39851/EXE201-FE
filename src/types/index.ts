@@ -3,6 +3,15 @@
  * Feature-specific types should reside in src/features/<feature>/types/
  */
 
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  role: 'MEMBER' | 'ADMIN';
+  reputationScore: number;
+  avatarUrl?: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;

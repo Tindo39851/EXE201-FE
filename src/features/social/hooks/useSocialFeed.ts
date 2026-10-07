@@ -57,6 +57,8 @@ export function useSocialFeed() {
     try {
       const newPost = await socialService.createPost({ content });
       setPosts(prev => [newPost, ...prev]);
+    } catch (err: any) {
+      alert(err.message || 'Failed to publish post');
     } finally {
       setIsPosting(false);
     }

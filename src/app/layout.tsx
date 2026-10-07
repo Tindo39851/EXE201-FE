@@ -25,6 +25,8 @@ export const metadata: Metadata = {
   description: "The Premier Competitive Player Matching Platform",
 };
 
+import { AuthProvider } from "@/contexts/AuthContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,7 +37,7 @@ export default function RootLayout({
       <body
         className={`${orbitron.variable} ${rajdhani.variable} ${shareTechMono.variable} bg-gt-bg text-gt-text font-rajdhani antialiased`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

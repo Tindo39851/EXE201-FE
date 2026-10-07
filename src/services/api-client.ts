@@ -1,49 +1,57 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import type { ApiError } from '@/types';
 
 /**
  * Centralized API Client
- * Follows the Light Clean Architecture requirement:
- * All feature services must route through this client.
+ * - withCredentials: true  → trình duyệt tự gửi/nhận HttpOnly cookies
+ * - Response interceptor   → tự unwrap envelope { success, message, data: T }
+ *                            nên tất cả services nhận thẳng T qua response.data
  */
 const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL,
   timeout: 15000,
+  withCredentials: true, // gửi HttpOnly cookie kèm mỗi request
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
 });
 
-// Request Interceptor: Attach authentication token if available
+// ── Request Interceptor ──────────────────────────────────────────────────────
+// Cookie được gửi tự động nhờ withCredentials, không cần đọc localStorage nữa.
 apiClient.interceptors.request.use(
-  (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('gametrust_token');
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
-    return config;
-  },
+  (config) => config,
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Format errors and handle global auth states
+// ── Response Interceptor ─────────────────────────────────────────────────────
+// 1. Unwrap BE envelope: { success, message, data: T } → trả về T
+// 2. Khi 401, dispatch event để AuthContext bắt và clear user state
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'data' in response.data
+    ) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
   (error: AxiosError<ApiError>) => {
     const customError: ApiError = {
       statusCode: error.response?.status || 500,
-      message: error.response?.data?.message || error.message || 'An unexpected error occurred',
+      message:
+        error.response?.data?.message ||
+        error.message ||
+        'An unexpected error occurred',
       errors: error.response?.data?.errors,
     };
 
     if (customError.statusCode === 401 && typeof window !== 'undefined') {
-      // Clear token on Unauthorized response
-      localStorage.removeItem('gametrust_token');
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
     }
 
     return Promise.reject(customError);

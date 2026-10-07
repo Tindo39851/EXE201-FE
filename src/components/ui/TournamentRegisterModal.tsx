@@ -5,6 +5,8 @@ import { X, Trophy, Users, Shield, Zap, Sparkles } from 'lucide-react';
 import type { Tournament } from '@/features/tournaments/types/tournament.types';
 import { formatCurrency } from '@/lib/utils';
 
+import { tournamentService } from '@/features/tournaments/services/tournament.service';
+
 interface TournamentRegisterModalProps {
   tournament: Tournament | null;
   isOpen: boolean;
@@ -19,16 +21,27 @@ export const TournamentRegisterModal: React.FC<TournamentRegisterModalProps> = (
   const [teamName, setTeamName] = useState('');
   const [captainDiscord, setCaptainDiscord] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen || !tournament) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSuccess(true);
-    setTimeout(() => {
-      setIsSuccess(false);
-      onClose();
-    }, 2000);
+    setErrorMsg(null);
+    setSubmitting(true);
+    try {
+      await tournamentService.registerTeam(tournament.id, { teamName, captainDiscord });
+      setIsSuccess(true);
+      setTimeout(() => {
+        setIsSuccess(false);
+        onClose();
+      }, 1500);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Registration failed');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -70,6 +83,11 @@ export const TournamentRegisterModal: React.FC<TournamentRegisterModalProps> = (
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 font-mono text-xs">
+            {errorMsg && (
+              <div className="p-2.5 bg-gt-red/10 border border-gt-red/40 text-gt-red rounded-sm text-[11px] animate-fadeIn">
+                {errorMsg}
+              </div>
+            )}
             <div>
               <label className="block text-gt-text-dim uppercase tracking-wider mb-1">
                 Squad / Team Name

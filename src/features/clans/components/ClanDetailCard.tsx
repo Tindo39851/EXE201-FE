@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Users, Trophy, Lock, Eye } from 'lucide-react';
 import type { Clan } from '../types/clan.types';
 import { ClanRosterModal } from '@/components/ui/ClanRosterModal';
+import { clanService } from '../services/clan.service';
 
 interface ClanDetailCardProps {
   clan: Clan;
@@ -11,6 +12,19 @@ interface ClanDetailCardProps {
 
 export const ClanDetailCard: React.FC<ClanDetailCardProps> = ({ clan }) => {
   const [rosterOpen, setRosterOpen] = useState(false);
+  const [applying, setApplying] = useState(false);
+
+  const handleApply = async () => {
+    setApplying(true);
+    try {
+      const res = await clanService.requestJoinClan(clan.id);
+      alert(res.message || `Application submitted to join ${clan.name}!`);
+    } catch (err: any) {
+      alert(err.message || 'Please log in to apply for this clan');
+    } finally {
+      setApplying(false);
+    }
+  };
 
   return (
     <>
@@ -107,11 +121,12 @@ export const ClanDetailCard: React.FC<ClanDetailCardProps> = ({ clan }) => {
             
             <div className="flex gap-3 w-full sm:w-auto">
               <button
-                onClick={() => alert(`Application submitted to join ${clan.name}!`)}
-                className="flex-1 sm:flex-initial px-4 py-2.5 border border-gt-border text-gt-text-dim font-mono text-xs uppercase hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                onClick={handleApply}
+                disabled={applying}
+                className="flex-1 sm:flex-initial px-4 py-2.5 border border-gt-cyan/60 text-gt-cyan font-mono text-xs uppercase hover:bg-gt-cyan/10 transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <Lock size={13} />
-                <span>INVITE ONLY</span>
+                <span>{applying ? 'SUBMITTING...' : 'APPLY TO JOIN'}</span>
               </button>
               <button
                 onClick={() => setRosterOpen(true)}

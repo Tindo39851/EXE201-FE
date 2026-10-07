@@ -141,8 +141,33 @@ export const squadService = {
     try {
       const response = await apiClient.post<{ success: boolean; message: string }>(`/squads/invite/${playerId}`);
       return response.data;
-    } catch {
+    } catch (err: any) {
+      if (err?.statusCode === 401) {
+        throw new Error('Please log in to invite players');
+      }
       return { success: true, message: `Invite dispatched to ${playerId}` };
+    }
+  },
+
+  async getMyInvites(): Promise<any[]> {
+    try {
+      const response = await apiClient.get<any[]>('/squads/invites/my');
+      return response.data || [];
+    } catch {
+      return [];
+    }
+  },
+
+  async respondToInvite(inviteId: string, accept: boolean): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await apiClient.post<{ success: boolean; message: string }>(
+        `/squads/invites/${inviteId}/respond`,
+        null,
+        { params: { accept } }
+      );
+      return response.data;
+    } catch (err: any) {
+      return { success: false, message: err?.message || 'Failed to respond to invite' };
     }
   },
 };

@@ -39,7 +39,10 @@ export const clanService = {
     try {
       const response = await apiClient.post(`/clans/${clanId}/join-request`);
       return response.data;
-    } catch {
+    } catch (err: any) {
+      if (err?.statusCode === 401) {
+        throw new Error('Please sign in to apply for this clan');
+      }
       return { success: true, message: 'Membership application submitted successfully' };
     }
   },
