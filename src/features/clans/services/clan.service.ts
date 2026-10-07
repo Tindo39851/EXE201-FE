@@ -1,4 +1,4 @@
-import { apiClient } from '@/services/api-client';
+import { apiClient, getApiErrorStatus } from '@/services/api-client';
 import type { Clan, ClanFilterDto } from '../types/clan.types';
 
 const MOCK_CLANS: Clan[] = [
@@ -39,8 +39,8 @@ export const clanService = {
     try {
       const response = await apiClient.post(`/clans/${clanId}/join-request`);
       return response.data;
-    } catch (err: any) {
-      if (err?.statusCode === 401) {
+    } catch (err: unknown) {
+      if (getApiErrorStatus(err) === 401) {
         throw new Error('Please sign in to apply for this clan');
       }
       return { success: true, message: 'Membership application submitted successfully' };

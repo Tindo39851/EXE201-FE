@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
-import { ArrowLeft, ShieldCheck, Activity, Award, ShieldAlert, Plus } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Award, ShieldAlert, Plus } from 'lucide-react';
 import { useReputation } from '@/features/reputation';
 import { ReviewModal } from '@/components/ui/ReviewModal';
 import { ReportModal } from '@/components/ui/ReportModal';
@@ -12,7 +12,7 @@ export default function ReputationPage() {
   const [activeTab, setActiveTab] = useState<'Overview' | 'Reports' | 'Reviews' | 'Leaderboard'>('Overview');
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
-  const { metrics, reports, reviews, isLoading, refetch } = useReputation();
+  const { metrics, reports, reviews, refetch } = useReputation();
 
   return (
     <div className="min-h-screen bg-gt-bg text-gt-text font-rajdhani selection:bg-gt-cyan selection:text-black">
@@ -356,7 +356,7 @@ function ReviewRow({ user, stars, quote, author, time, badge, badgeColor }: { us
         </div>
       </div>
       <p className="font-rajdhani text-sm text-gt-text-dim italic mb-1.5 leading-relaxed">
-        "{quote}"
+        &quot;{quote}&quot;
       </p>
       <div className="font-mono text-[11px] text-gt-text-dim/80">
         by <span className="text-gt-text">{author}</span> • {time}

@@ -9,7 +9,6 @@ import {
   Users,
   ShieldCheck,
   Ban,
-  CheckCircle,
   Terminal,
   Activity,
   LogOut,
@@ -20,24 +19,18 @@ import {
   AlertTriangle,
   Shield,
   Server,
-  Cpu,
   Radio,
   Clock,
   TrendingUp,
   Sparkles,
   Plus,
   Trash2,
-  Play,
-  Check,
   X,
   Gavel,
   CheckCircle2,
   XCircle,
   UserX,
   Sliders,
-  Settings2,
-  Star,
-  Award,
 } from 'lucide-react';
 
 type AdminTab = 'overview' | 'operatives' | 'tournaments' | 'reports' | 'clans';
@@ -53,7 +46,7 @@ export default function AdminPage() {
   // User Oversight Edit Modal States
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [editScore, setEditScore] = useState<number>(100);
-  const [editRole, setEditRole] = useState<string>('MEMBER');
+  const [editRole, setEditRole] = useState<AdminUser['role']>('MEMBER');
   const [savingUserEdit, setSavingUserEdit] = useState(false);
 
   // Tournament States
@@ -80,33 +73,34 @@ export default function AdminPage() {
   const [actingClanId, setActingClanId] = useState<string | number | null>(null);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      setLoadingUsers(true);
-      try {
-        const data = await adminService.getUsers();
-        setUsers(data);
-      } finally {
-        setLoadingUsers(false);
-      }
-    };
-
     if (user?.role === 'ADMIN') {
-      fetchUsers();
-      fetchTournaments();
-      fetchReports();
-      fetchClans();
+      const loadAdminData = async () => {
+        setLoadingUsers(true);
+        setLoadingTournaments(true);
+        setLoadingReports(true);
+        setLoadingClans(true);
+        try {
+          const [userData, tournamentData, reportData, clanData] = await Promise.all([
+            adminService.getUsers(),
+            adminService.getTournaments(),
+            adminService.getReports(),
+            adminService.getClans(),
+          ]);
+          setUsers(userData);
+          setTournaments(tournamentData);
+          setReports(reportData);
+          setClans(clanData);
+        } finally {
+          setLoadingUsers(false);
+          setLoadingTournaments(false);
+          setLoadingReports(false);
+          setLoadingClans(false);
+        }
+      };
+
+      void loadAdminData();
     }
   }, [user]);
-
-  const fetchClans = async () => {
-    setLoadingClans(true);
-    try {
-      const data = await adminService.getClans();
-      setClans(data);
-    } finally {
-      setLoadingClans(false);
-    }
-  };
 
   const handleDeleteClan = async (clanId: string | number) => {
     if (!confirm('Are you sure you want to disband this clan? This action cannot be undone.')) return;
@@ -135,26 +129,16 @@ export default function AdminPage() {
       await adminService.updateUserReputation(editingUser.id, editScore);
       await adminService.updateUserRole(editingUser.id, editRole);
       setUsers(prev =>
-        prev.map(u => (u.id === editingUser.id ? { ...u, reputationScore: editScore, role: editRole as any } : u))
+        prev.map(u => (u.id === editingUser.id ? { ...u, reputationScore: editScore, role: editRole } : u))
       );
       setEditingUser(null);
     } catch {
       setUsers(prev =>
-        prev.map(u => (u.id === editingUser.id ? { ...u, reputationScore: editScore, role: editRole as any } : u))
+        prev.map(u => (u.id === editingUser.id ? { ...u, reputationScore: editScore, role: editRole } : u))
       );
       setEditingUser(null);
     } finally {
       setSavingUserEdit(false);
-    }
-  };
-
-  const fetchReports = async () => {
-    setLoadingReports(true);
-    try {
-      const data = await adminService.getReports();
-      setReports(data);
-    } finally {
-      setLoadingReports(false);
     }
   };
 
@@ -187,16 +171,6 @@ export default function AdminPage() {
       );
     } finally {
       setActingReportId(null);
-    }
-  };
-
-  const fetchTournaments = async () => {
-    setLoadingTournaments(true);
-    try {
-      const data = await adminService.getTournaments();
-      setTournaments(data);
-    } finally {
-      setLoadingTournaments(false);
     }
   };
 
@@ -238,16 +212,16 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateTournStatus = async (id: string, status: string) => {
+  const handleUpdateTournStatus = async (id: string, status: AdminTournament['status']) => {
     setActingTournId(id);
     try {
       const updated = await adminService.updateTournamentStatus(id, status);
       setTournaments(prev =>
-        prev.map(t => (t.id === id ? { ...t, status: (updated.status || status) as any } : t))
+        prev.map(t => (t.id === id ? { ...t, status: updated.status || status } : t))
       );
     } catch {
       setTournaments(prev =>
-        prev.map(t => (t.id === id ? { ...t, status: status as any } : t))
+        prev.map(t => (t.id === id ? { ...t, status } : t))
       );
     } finally {
       setActingTournId(null);
@@ -356,7 +330,7 @@ export default function AdminPage() {
                 </span>
               </div>
               <div className="font-mono text-[9px] text-gt-text-dim tracking-wider uppercase -mt-0.5">
-                // CENTRAL OVERSIGHT & SECURITY PANEL
+                {'// CENTRAL OVERSIGHT & SECURITY PANEL'}
               </div>
             </div>
           </div>
@@ -409,7 +383,7 @@ export default function AdminPage() {
         {/* SIDEBAR NAVIGATION */}
         <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-gt-border/60 bg-[#080B12] p-4 flex flex-row md:flex-col gap-1.5 shrink-0 overflow-x-auto md:overflow-visible">
           <div className="hidden md:block px-3 py-2 text-[10px] font-mono uppercase tracking-widest text-gt-text-dim border-b border-gt-border/40 mb-2">
-            // CONTROL SUBSYSTEMS
+            {'// CONTROL SUBSYSTEMS'}
           </div>
 
           {navTabs.map((tab) => {
@@ -563,7 +537,7 @@ export default function AdminPage() {
                     <div className="p-2.5 bg-black/40 border-l-2 border-gt-yellow rounded-xs flex items-start justify-between">
                       <div>
                         <div className="text-white font-bold">Admin Session Authenticated</div>
-                        <div className="text-gt-text-dim text-[11px]">Clearance granted for user "{user.username}"</div>
+                        <div className="text-gt-text-dim text-[11px]">Clearance granted for user &quot;{user.username}&quot;</div>
                       </div>
                       <span className="text-[10px] text-gt-text-dim">5m ago</span>
                     </div>
@@ -653,7 +627,7 @@ export default function AdminPage() {
                   </div>
                 ) : filteredUsers.length === 0 ? (
                   <div className="py-12 text-center font-mono text-xs text-gt-text-dim">
-                    No operatives found matching "{searchQuery}".
+                    No operatives found matching &quot;{searchQuery}&quot;.
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -782,7 +756,7 @@ export default function AdminPage() {
                   </div>
                 ) : tournaments.length === 0 ? (
                   <div className="py-12 text-center font-mono text-xs text-gt-text-dim">
-                    No tournaments active. Click "CREATE TOURNAMENT" above to launch one.
+                    No tournaments active. Click &quot;CREATE TOURNAMENT&quot; above to launch one.
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -848,7 +822,7 @@ export default function AdminPage() {
                                   <select
                                     value={t.status}
                                     disabled={actingTournId === t.id}
-                                    onChange={(e) => handleUpdateTournStatus(t.id, e.target.value)}
+                                    onChange={(e) => handleUpdateTournStatus(t.id, e.target.value as AdminTournament['status'])}
                                     className="bg-[#080B12] border border-gt-border hover:border-gt-yellow text-white text-[11px] font-mono px-2 py-1 rounded-sm focus:outline-none cursor-pointer"
                                   >
                                     <option value="UPCOMING">UPCOMING</option>
@@ -1107,7 +1081,7 @@ export default function AdminPage() {
 
                               <td className="py-3.5 px-3 max-w-xs">
                                 <p className="text-white text-xs leading-relaxed break-words">
-                                  "{r.reason || 'No description provided'}"
+                                  &quot;{r.reason || 'No description provided'}&quot;
                                 </p>
                               </td>
 
@@ -1360,7 +1334,7 @@ export default function AdminPage() {
                 </label>
                 <select
                   value={editRole}
-                  onChange={(e) => setEditRole(e.target.value)}
+                  onChange={(e) => setEditRole(e.target.value as AdminUser['role'])}
                   className="w-full bg-[#080B12] border border-gt-border hover:border-gt-cyan focus:border-gt-cyan focus:outline-none px-3 py-2 text-white rounded-sm transition-colors cursor-pointer"
                 >
                   <option value="MEMBER">MEMBER (Standard Competitor)</option>

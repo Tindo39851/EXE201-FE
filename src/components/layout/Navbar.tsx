@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Sparkles, LogOut, User as UserIcon } from 'lucide-react';
+import { Bell, Sparkles, LogOut } from 'lucide-react';
 import { AuthModal } from '@/components/ui/AuthModal';
 import { InboxModal } from '@/components/ui/InboxModal';
 import { useAuth } from '@/contexts/AuthContext';

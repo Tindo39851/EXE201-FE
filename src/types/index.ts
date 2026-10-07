@@ -33,6 +33,8 @@ export interface ApiError {
   errors?: Record<string, string[]>;
 }
 
+export type AuthPayload = AuthUser | { user: AuthUser };
+
 export type AccentColor =
   | 'cyan'
   | 'magenta'

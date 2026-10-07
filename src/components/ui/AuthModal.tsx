@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getApiErrorMessage } from '@/services/api-client';
 import { X, Shield, Lock, Mail, User, Sparkles, ArrowRight, ArrowLeft, KeyRound, RotateCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -81,8 +82,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             router.push('/admin');
           }
         }, 800);
-      } catch (err: any) {
-        setErrorMsg(err?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+      } catch (err: unknown) {
+        setErrorMsg(getApiErrorMessage(err, 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.'));
       } finally {
         setSubmitting(false);
       }
@@ -103,8 +104,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setStep('otp');
         setCountdown(300); // 5 minutes
         setSuccessNotice(`Mã OTP 6 số đã được gửi đến ${email}.`);
-      } catch (err: any) {
-        setErrorMsg(err?.message || 'Không thể gửi mã xác thực OTP. Vui lòng thử lại.');
+      } catch (err: unknown) {
+        setErrorMsg(getApiErrorMessage(err, 'Không thể gửi mã xác thực OTP. Vui lòng thử lại.'));
       } finally {
         setSubmitting(false);
       }
@@ -131,8 +132,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsSuccess(false);
         onClose();
       }, 1200);
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Mã OTP không chính xác hoặc đã hết hạn.');
+    } catch (err: unknown) {
+      setErrorMsg(getApiErrorMessage(err, 'Mã OTP không chính xác hoặc đã hết hạn.'));
     } finally {
       setSubmitting(false);
     }
@@ -147,8 +148,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       await sendRegistrationOtp(username.trim(), email.trim());
       setCountdown(300);
       setSuccessNotice('Mã OTP mới đã được gửi lại thành công!');
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Không thể gửi lại mã OTP. Vui lòng thử lại sau.');
+    } catch (err: unknown) {
+      setErrorMsg(getApiErrorMessage(err, 'Không thể gửi lại mã OTP. Vui lòng thử lại sau.'));
     } finally {
       setResending(false);
     }
