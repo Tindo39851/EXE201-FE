@@ -125,7 +125,7 @@ export const socialService = {
     }
   },
 
-  async toggleLikePost(postId: number): Promise<{ liked: boolean; count: number }> {
+  async toggleLikePost(postId: string | number): Promise<{ liked: boolean; count: number }> {
     try {
       const response = await apiClient.post<{ liked: boolean; count: number }>(`/social/posts/${postId}/like`);
       return response.data;

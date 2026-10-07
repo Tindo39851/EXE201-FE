@@ -8,6 +8,21 @@ import type { ApiError } from '@/types';
  *                            nên tất cả services nhận thẳng T qua response.data
  */
 const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const ACCESS_TOKEN_KEY = 'gametrust_token';
+const REFRESH_TOKEN_KEY = 'gametrust_refresh_token';
+
+export const tokenStorage = {
+  getAccessToken: () => typeof window === 'undefined' ? null : localStorage.getItem(ACCESS_TOKEN_KEY),
+  getRefreshToken: () => typeof window === 'undefined' ? null : localStorage.getItem(REFRESH_TOKEN_KEY),
+  setTokens: (accessToken: string, refreshToken: string) => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  },
+  clear: () => {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  },
+};
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL,
@@ -20,9 +35,14 @@ export const apiClient: AxiosInstance = axios.create({
 });
 
 // ── Request Interceptor ──────────────────────────────────────────────────────
-// Cookie được gửi tự động nhờ withCredentials, không cần đọc localStorage nữa.
 apiClient.interceptors.request.use(
-  (config) => config,
+  (config) => {
+    const token = tokenStorage.getAccessToken();
+    if (token && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
   (error) => Promise.reject(error)
 );
 

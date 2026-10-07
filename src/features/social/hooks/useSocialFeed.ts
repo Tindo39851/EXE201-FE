@@ -34,7 +34,7 @@ export function useSocialFeed() {
     loadFeed();
   }, [loadFeed]);
 
-  const toggleLike = async (postId: string) => {
+  const toggleLike = async (postId: string | number) => {
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         return {

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Orbitron, Rajdhani, Share_Tech_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/features/auth/components/AuthProvider";
 
 const orbitron = Orbitron({
   subsets: ["latin"],
