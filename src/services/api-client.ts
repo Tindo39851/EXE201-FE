@@ -1,6 +1,21 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import type { ApiError } from '@/types';
 
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message) return message;
+  }
+  return fallback;
+}
+
+export function getApiErrorStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null || !('statusCode' in error)) return undefined;
+  const statusCode = (error as { statusCode?: unknown }).statusCode;
+  return typeof statusCode === 'number' ? statusCode : undefined;
+}
+
 /**
  * Centralized API Client
  * - withCredentials: true  → trình duyệt tự gửi/nhận HttpOnly cookies

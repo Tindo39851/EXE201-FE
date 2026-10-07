@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { getApiErrorMessage } from '@/services/api-client';
 import { Users, Trophy, Lock, Eye } from 'lucide-react';
 import type { Clan } from '../types/clan.types';
 import { ClanRosterModal } from '@/components/ui/ClanRosterModal';
@@ -19,8 +20,8 @@ export const ClanDetailCard: React.FC<ClanDetailCardProps> = ({ clan }) => {
     try {
       const res = await clanService.requestJoinClan(clan.id);
       alert(res.message || `Application submitted to join ${clan.name}!`);
-    } catch (err: any) {
-      alert(err.message || 'Please log in to apply for this clan');
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err, 'Please log in to apply for this clan'));
     } finally {
       setApplying(false);
     }

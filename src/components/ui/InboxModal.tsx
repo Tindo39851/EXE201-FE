@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Bell, Users, Check, Ban, Radio } from 'lucide-react';
 import { squadService } from '@/features/squads/services/squad.service';
+import type { SquadInvite } from '@/features/squads/types/squad.types';
 
 interface InboxModalProps {
   isOpen: boolean;
@@ -10,7 +11,7 @@ interface InboxModalProps {
 }
 
 export const InboxModal: React.FC<InboxModalProps> = ({ isOpen, onClose }) => {
-  const [invites, setInvites] = useState<any[]>([]);
+  const [invites, setInvites] = useState<SquadInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
 
@@ -26,7 +27,9 @@ export const InboxModal: React.FC<InboxModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
-      fetchInvites();
+      // Refresh inbox contents whenever the modal opens.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void fetchInvites();
     }
   }, [isOpen]);
 

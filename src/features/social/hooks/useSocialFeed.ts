@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { getApiErrorMessage } from '@/services/api-client';
 import { socialService } from '../services/social.service';
 import type { SocialPost, OnlinePlayer, TrendingTag } from '../types/social.types';
 
@@ -59,8 +60,8 @@ export function useSocialFeed() {
     try {
       const newPost = await socialService.createPost({ content });
       setPosts(prev => [newPost, ...prev]);
-    } catch (err: any) {
-      alert(err.message || 'Failed to publish post');
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err, 'Failed to publish post'));
     } finally {
       setIsPosting(false);
     }

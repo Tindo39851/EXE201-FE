@@ -3,64 +3,45 @@
 import { useState, useEffect, useCallback } from 'react';
 import { voiceService } from '../services/voice.service';
 import type { VoiceRoom, ChatMessage } from '../types/voice.types';
-import { useAuth } from '@/contexts/AuthContext';
 
-export function useVoiceRoom(roomId: string | null, onLeave?: () => void) {
-  const { user } = useAuth();
+const sameMessages = (current: ChatMessage[], incoming: ChatMessage[]) =>
+  current.length === incoming.length && current.every((message, index) => {
+    const next = incoming[index];
+    return message.id === next.id
+      && message.content === next.content
+      && message.createdAt === next.createdAt
+      && message.authorUsername === next.authorUsername;
+  });
+
+export function useVoiceRoom(roomId: string | null) {
   const [room, setRoom] = useState<VoiceRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [isDeafened, setIsDeafened] = useState<boolean>(false);
-  const [isScreenSharing, setIsScreenSharing] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Load room details & sync presence
   const loadRoom = useCallback(async () => {
     if (!roomId) return;
     const data = await voiceService.getRoomDetails(roomId);
-    if (data) {
-      // Mark current user if present or append current user
-      const currentUserName = user?.username || 'YOU';
-      const hasCurrentUser = data.members.some(m => m.username === currentUserName || m.isCurrentUser);
-      if (!hasCurrentUser) {
-        data.members.push({
-          id: `mem_current_${Date.now()}`,
-          userId: user?.id || 'current-user',
-          username: currentUserName,
-          avatarLetter: currentUserName[0].toUpperCase(),
-          avatarColor: '#00F0FF',
-          role: 'Flex',
-          rank: 'Diamond',
-          isCurrentUser: true,
-          muted: isMuted,
-        });
-        data.onlineCount = data.members.length;
-      }
-      setRoom(data);
-    }
+    if (data) setRoom(data);
     setLoading(false);
-  }, [roomId, user, isMuted]);
+  }, [roomId]);
 
   // Load chat messages
   const loadMessages = useCallback(async () => {
     if (!roomId) return;
     const msgs = await voiceService.getMessages(roomId, room?.gameId);
-    setMessages(msgs);
+    setMessages(current => sameMessages(current, msgs) ? current : msgs);
   }, [roomId, room?.gameId]);
 
   useEffect(() => {
     if (!roomId) {
-      setRoom(null);
       return;
     }
 
-    setLoading(true);
-    // Initial join
-    voiceService.joinRoom(roomId, user ? { id: user.id, username: user.username } : undefined)
-      .then(() => {
-        loadRoom();
-        loadMessages();
-      });
+    const initialLoad = window.setTimeout(() => {
+      void loadRoom();
+      void loadMessages();
+    }, 0);
 
     // Polling room state & chat
     const roomInterval = setInterval(loadRoom, 4000);
@@ -69,58 +50,26 @@ export function useVoiceRoom(roomId: string | null, onLeave?: () => void) {
     return () => {
       clearInterval(roomInterval);
       clearInterval(msgInterval);
+      window.clearTimeout(initialLoad);
     };
-  }, [roomId, loadRoom, loadMessages, user]);
-
-  const toggleMute = async () => {
-    if (!roomId) return;
-    const nextState = !isMuted;
-    setIsMuted(nextState);
-    await voiceService.updateMemberMute(roomId, user?.id || 'current-user', nextState);
-    loadRoom();
-  };
-
-  const toggleDeafen = () => {
-    setIsDeafened(prev => !prev);
-  };
-
-  const toggleScreenShare = () => {
-    setIsScreenSharing(prev => !prev);
-  };
+  }, [roomId, loadRoom, loadMessages]);
 
   const sendMessage = async (content: string) => {
     if (!roomId || !content.trim()) return;
     const sent = await voiceService.sendMessage(
       roomId, 
       content, 
-      user ? { id: user.id, username: user.username } : undefined,
+      undefined,
       room?.gameId
     );
     setMessages(prev => [...prev, sent]);
-  };
-
-  const leaveRoom = async () => {
-    if (roomId) {
-      await voiceService.leaveRoom(roomId, user?.id || 'current-user');
-    }
-    setRoom(null);
-    if (onLeave) {
-      onLeave();
-    }
   };
 
   return {
     room,
     messages,
     loading,
-    isMuted,
-    isDeafened,
-    isScreenSharing,
-    toggleMute,
-    toggleDeafen,
-    toggleScreenShare,
     sendMessage,
-    leaveRoom,
     refreshRoom: loadRoom,
   };
 }

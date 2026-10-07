@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { getApiErrorMessage } from '@/services/api-client';
 import { Mic, Check } from 'lucide-react';
 import type { PlayerProfile } from '../types/squad.types';
 
@@ -87,8 +88,8 @@ export const PlayerCard: React.FC<PlayerCardComponentProps> = ({ player, onInvit
       }
       setInvited(true);
       setTimeout(() => setInvited(false), 3000);
-    } catch (err: any) {
-      alert(err?.message || 'Please log in to invite players');
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err, 'Please log in to invite players'));
     }
   };
 

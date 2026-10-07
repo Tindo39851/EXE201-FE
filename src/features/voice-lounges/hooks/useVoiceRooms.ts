@@ -29,15 +29,18 @@ export function useVoiceRooms() {
   }, [activeGameId]);
 
   useEffect(() => {
-    loadGames();
+    const timeout = window.setTimeout(() => void loadGames(), 0);
+    return () => window.clearTimeout(timeout);
   }, [loadGames]);
 
   useEffect(() => {
-    setLoading(true);
-    loadRooms();
+    const timeout = window.setTimeout(() => void loadRooms(), 0);
     // Poll rooms list every 5 seconds
     const interval = setInterval(loadRooms, 5000);
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(timeout);
+      clearInterval(interval);
+    };
   }, [loadRooms]);
 
   // Compute total online count across all rooms

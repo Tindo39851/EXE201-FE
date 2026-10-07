@@ -5,9 +5,9 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { tournamentService } from '@/features/tournaments/services/tournament.service';
+import type { TournamentRegistration } from '@/features/tournaments/types/tournament.types';
 import {
   ArrowLeft,
-  User as UserIcon,
   Shield,
   Trophy,
   Mail,
@@ -27,17 +27,11 @@ const AVATAR_PRESETS = [
 
 export default function ProfilePage() {
   const { user, loading, updateProfile } = useAuth();
-  const [tournaments, setTournaments] = useState<any[]>([]);
+  const [tournaments, setTournaments] = useState<TournamentRegistration[]>([]);
   const [loadingTournaments, setLoadingTournaments] = useState(true);
-  const [selectedPreset, setSelectedPreset] = useState(AVATAR_PRESETS[0]);
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  useEffect(() => {
-    if (user?.avatarUrl) {
-      setSelectedPreset(user.avatarUrl);
-    }
-  }, [user]);
 
   useEffect(() => {
     const fetchMyTournaments = async () => {
@@ -104,6 +98,8 @@ export default function ProfilePage() {
     );
   }
 
+  const activePreset = selectedPreset ?? user.avatarUrl ?? AVATAR_PRESETS[0];
+
   return (
     <div className="min-h-screen bg-gt-bg text-gt-text font-rajdhani selection:bg-gt-cyan selection:text-black">
       <Navbar />
@@ -137,7 +133,7 @@ export default function ProfilePage() {
               {/* Avatar Box */}
               <div
                 className={`w-20 h-20 sm:w-24 sm:h-24 rounded-sm border-2 flex items-center justify-center font-orbitron font-extrabold text-3xl sm:text-4xl shadow-[0_0_20px_rgba(0,240,255,0.2)] cyber-cut transition-all ${
-                  user.avatarUrl || selectedPreset
+                  activePreset
                 }`}
               >
                 {user.username.charAt(0).toUpperCase()}
@@ -184,7 +180,7 @@ export default function ProfilePage() {
                     disabled={saving}
                     onClick={() => handleSaveAvatar(preset)}
                     className={`w-10 h-10 rounded-sm border-2 transition-all cursor-pointer flex items-center justify-center font-orbitron font-bold text-sm ${preset} ${
-                      selectedPreset === preset ? 'scale-110 ring-2 ring-white' : 'opacity-70 hover:opacity-100'
+                      activePreset === preset ? 'scale-110 ring-2 ring-white' : 'opacity-70 hover:opacity-100'
                     }`}
                   >
                     {user.username.charAt(0).toUpperCase()}

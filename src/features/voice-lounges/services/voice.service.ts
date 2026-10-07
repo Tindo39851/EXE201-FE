@@ -4,16 +4,63 @@ import type {
   GameHubItem, 
   ChatMessage, 
   CreateRoomDto,
-  VoiceMember
+  VoiceMember,
+  VoiceJoinCredentials
 } from '../types/voice.types';
 
+interface ApiVoiceMember {
+  id?: string;
+  userId: string;
+  username?: string;
+  muted?: boolean;
+}
+
+interface ApiChannel {
+  id: string;
+  gameId?: string;
+  name: string;
+  type: 'TEXT' | 'VOICE';
+  locked?: boolean;
+  capacity?: number;
+  onlineCount?: number;
+  members?: ApiVoiceMember[];
+  ownerId?: string;
+  ownerUsername?: string;
+  isDefault?: boolean;
+  createdAt?: string;
+}
+
+interface ApiGameHub {
+  id: string;
+  name: string;
+  shortName?: string;
+  channels?: ApiChannel[];
+}
+
+interface ApiChatMessage {
+  id: string;
+  channelId: string;
+  authorId: string;
+  authorUsername: string;
+  content: string;
+  createdAt: string;
+}
+
 const INITIAL_GAMES: GameHubItem[] = [
-  { id: 'all', name: 'ALL GAMES', shortName: 'ALL', count: 12 },
-  { id: 'league-of-legends', name: 'League of Legends', shortName: 'LOL', count: 5 },
+  { id: 'all', name: 'ALL GAMES', shortName: 'ALL', count: 8 },
+  { id: 'league-of-legends', name: 'League of Legends', shortName: 'LOL', count: 2 },
   { id: 'free-fire', name: 'Free Fire', shortName: 'FF', count: 2 },
-  { id: 'valorant', name: 'Valorant', shortName: 'VAL', count: 3 },
-  { id: 'cs2', name: 'CS2', shortName: 'CS2', count: 2 },
+  { id: 'lien-quan', name: 'Liên Quân', shortName: 'AOV', count: 2 },
+  { id: 'valorant', name: 'Valorant', shortName: 'VAL', count: 2 },
 ];
+
+const SUPPORTED_GAME_IDS = new Set(['free-fire', 'league-of-legends', 'lien-quan', 'valorant']);
+const SUPPORTED_ROOM_IDS = new Set([
+  'room-lol-1', 'room-lol-2',
+  'room-ff-1', 'room-ff-2',
+  'room-aov-1', 'room-aov-2',
+  'room-val-1', 'room-val-2',
+]);
 
 const INITIAL_ROOMS: VoiceRoom[] = [
   {
@@ -176,10 +223,10 @@ const INITIAL_ROOMS: VoiceRoom[] = [
     ],
   },
   {
-    id: 'room-cs2-1',
-    gameId: 'cs2',
-    gameName: 'CS2',
-    name: 'Late night Mirage executes',
+    id: 'room-aov-1',
+    gameId: 'lien-quan',
+    gameName: 'Liên Quân',
+    name: 'Leo rank Cao Thủ',
     tag: 'Climbing',
     visibility: 'Public',
     ping: 16,
@@ -193,10 +240,10 @@ const INITIAL_ROOMS: VoiceRoom[] = [
     ],
   },
   {
-    id: 'room-cs2-2',
-    gameId: 'cs2',
-    gameName: 'CS2',
-    name: 'Faceit level 8+ grind',
+    id: 'room-aov-2',
+    gameId: 'lien-quan',
+    gameName: 'Liên Quân',
+    name: 'Đấu thường giao lưu',
     tag: 'Rank Tryhard',
     visibility: 'Public',
     ping: 24,
@@ -283,8 +330,10 @@ const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
   ],
 };
 
-let localRooms: VoiceRoom[] = [...INITIAL_ROOMS];
-let localMessages: Record<string, ChatMessage[]> = { ...INITIAL_MESSAGES };
+let localRooms: VoiceRoom[] = INITIAL_ROOMS.filter(room =>
+  SUPPORTED_GAME_IDS.has(room.gameId) && SUPPORTED_ROOM_IDS.has(room.id)
+);
+const localMessages: Record<string, ChatMessage[]> = { ...INITIAL_MESSAGES };
 
 export const voiceService = {
   /**
@@ -292,11 +341,11 @@ export const voiceService = {
    */
   async getGameHubs(): Promise<GameHubItem[]> {
     try {
-      const res = await apiClient.get<any[]>('/community/games');
+      const res = await apiClient.get<ApiGameHub[]>('/community/games');
       if (Array.isArray(res.data) && res.data.length > 0) {
         // Map backend games to GameHubItem
         const items: GameHubItem[] = res.data.map(g => {
-          const voiceChannels = (g.channels || []).filter((c: any) => c.type === 'VOICE');
+          const voiceChannels = (g.channels || []).filter(c => c.type === 'VOICE');
           return {
             id: g.id,
             name: g.name,
@@ -319,11 +368,11 @@ export const voiceService = {
   async getVoiceRooms(gameId?: string): Promise<VoiceRoom[]> {
     try {
       if (gameId && gameId !== 'all') {
-        const res = await apiClient.get<any[]>(`/community/games/${gameId}/channels`);
+        const res = await apiClient.get<ApiChannel[]>(`/community/games/${gameId}/channels`);
         if (Array.isArray(res.data)) {
-          const voiceChannels = res.data.filter((c: any) => c.type === 'VOICE');
+          const voiceChannels = res.data.filter(c => c.type === 'VOICE');
           if (voiceChannels.length > 0) {
-            const mapped: VoiceRoom[] = voiceChannels.map((c: any) => ({
+            const mapped: VoiceRoom[] = voiceChannels.map(c => ({
               id: c.id,
               gameId: c.gameId || gameId,
               gameName: c.gameId ? c.gameId.replace(/-/g, ' ').toUpperCase() : 'GAME HUB',
@@ -333,28 +382,31 @@ export const voiceService = {
               ping: Math.floor(Math.random() * 20) + 15,
               capacity: c.capacity || 10,
               onlineCount: c.onlineCount || (c.members ? c.members.length : 0),
-              members: (c.members || []).map((m: any, idx: number) => ({
+              isLocked: !!c.locked,
+              isDefault: !!c.isDefault,
+              ownerId: c.ownerId,
+              ownerUsername: c.ownerUsername,
+              createdAt: c.createdAt,
+              members: (c.members || []).map((m, idx) => ({
                 id: m.id || `m_${idx}`,
                 userId: m.userId,
                 username: m.username || `User_${idx}`,
                 avatarLetter: (m.username || 'U')[0].toUpperCase(),
                 avatarColor: idx === 0 ? '#FFD700' : '#00F0FF',
-                isHost: idx === 0,
+                isHost: m.userId === c.ownerId,
                 muted: !!m.muted,
               })),
             }));
-            // Merge with local rich mock rooms for this game so UI looks full
-            const localForGame = localRooms.filter(r => r.gameId.toLowerCase() === gameId.toLowerCase());
-            return [...mapped, ...localForGame.filter(lr => !mapped.some(m => m.id === lr.id))];
+            return mapped;
           }
         }
       } else {
         // Fetch all games and collect their voice channels
-        const res = await apiClient.get<any[]>('/community/games');
+        const res = await apiClient.get<ApiGameHub[]>('/community/games');
         if (Array.isArray(res.data) && res.data.length > 0) {
           const beVoiceChannels: VoiceRoom[] = [];
           for (const g of res.data) {
-            const vChannels = (g.channels || []).filter((c: any) => c.type === 'VOICE');
+            const vChannels = (g.channels || []).filter(c => c.type === 'VOICE');
             for (const c of vChannels) {
               beVoiceChannels.push({
                 id: c.id,
@@ -366,28 +418,24 @@ export const voiceService = {
                 ping: Math.floor(Math.random() * 20) + 15,
                 capacity: c.capacity || 10,
                 onlineCount: c.onlineCount || 0,
-                members: (c.members || []).map((m: any, idx: number) => ({
+                isLocked: !!c.locked,
+                isDefault: !!c.isDefault,
+                ownerId: c.ownerId,
+                ownerUsername: c.ownerUsername,
+                createdAt: c.createdAt,
+                members: (c.members || []).map((m, idx) => ({
                   id: m.id || `m_${idx}`,
                   userId: m.userId,
                   username: m.username || `User_${idx}`,
                   avatarLetter: (m.username || 'U')[0].toUpperCase(),
                   avatarColor: idx === 0 ? '#FFD700' : '#00F0FF',
-                  isHost: idx === 0,
+                  isHost: m.userId === c.ownerId,
                   muted: !!m.muted,
                 })),
               });
             }
           }
-          if (beVoiceChannels.length > 0) {
-            // Combine with initial rich mockup rooms
-            const merged = [...localRooms];
-            for (const b of beVoiceChannels) {
-              if (!merged.some(m => m.id === b.id)) {
-                merged.push(b);
-              }
-            }
-            return merged;
-          }
+          if (beVoiceChannels.length > 0) return beVoiceChannels;
         }
       }
     } catch {
@@ -405,7 +453,7 @@ export const voiceService = {
    */
   async getRoomDetails(roomId: string): Promise<VoiceRoom | null> {
     try {
-      const res = await apiClient.get<any>(`/community/rooms/${roomId}`);
+      const res = await apiClient.get<ApiChannel>(`/community/rooms/${roomId}`);
       if (res.data) {
         const c = res.data;
         return {
@@ -418,13 +466,18 @@ export const voiceService = {
           ping: 28,
           capacity: c.capacity || 10,
           onlineCount: c.onlineCount || (c.members ? c.members.length : 0),
-          members: (c.members || []).map((m: any, idx: number) => ({
+          isLocked: !!c.locked,
+          isDefault: !!c.isDefault,
+          ownerId: c.ownerId,
+          ownerUsername: c.ownerUsername,
+          createdAt: c.createdAt,
+          members: (c.members || []).map((m, idx) => ({
             id: m.id || `m_${idx}`,
             userId: m.userId,
-            username: m.username,
+            username: m.username || `User_${idx}`,
             avatarLetter: (m.username || 'U')[0].toUpperCase(),
             avatarColor: idx === 0 ? '#FFD700' : '#00F0FF',
-            isHost: idx === 0,
+            isHost: m.userId === c.ownerId,
             muted: !!m.muted,
           })),
         };
@@ -442,7 +495,7 @@ export const voiceService = {
    */
   async createRoom(dto: CreateRoomDto): Promise<VoiceRoom> {
     try {
-      const res = await apiClient.post<any>(`/community/games/${dto.gameId}/rooms`, {
+      const res = await apiClient.post<ApiChannel>(`/community/games/${dto.gameId}/rooms`, {
         name: dto.name,
         capacity: dto.capacity,
       });
@@ -492,6 +545,17 @@ export const voiceService = {
     };
     localRooms = [newRoom, ...localRooms];
     return newRoom;
+  },
+
+  /**
+   * Request a short-lived, microphone-only LiveKit token from the authenticated backend.
+   * This deliberately has no mock fallback: a failed token request must never look connected.
+   */
+  async createVoiceToken(roomId: string): Promise<VoiceJoinCredentials> {
+    const response = await apiClient.post<VoiceJoinCredentials>(
+      `/community/rooms/${roomId}/voice-token`
+    );
+    return response.data;
   },
 
   /**
@@ -604,7 +668,7 @@ export const voiceService = {
     try {
       // Try fetching from the channel directly or the game general channel
       const targetChannel = gameId ? `${gameId}_general` : channelId;
-      const res = await apiClient.get<any[]>(`/community/channels/${targetChannel}/messages`);
+      const res = await apiClient.get<ApiChatMessage[]>(`/community/channels/${targetChannel}/messages`);
       if (Array.isArray(res.data) && res.data.length > 0) {
         return res.data.map(m => ({
           id: m.id,
@@ -630,7 +694,7 @@ export const voiceService = {
   async sendMessage(channelId: string, content: string, currentUser?: { id: string; username: string }, gameId?: string): Promise<ChatMessage> {
     try {
       const targetChannel = gameId ? `${gameId}_general` : channelId;
-      const res = await apiClient.post<any>(`/community/channels/${targetChannel}/messages`, { content });
+      const res = await apiClient.post<ApiChatMessage>(`/community/channels/${targetChannel}/messages`, { content });
       if (res.data) {
         const m = res.data;
         return {

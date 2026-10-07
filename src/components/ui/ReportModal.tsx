@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { getApiErrorMessage } from '@/services/api-client';
 import { X, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { reputationService } from '@/features/reputation/services/reputation.service';
 import type { ReputationReport } from '@/features/reputation/types/reputation.types';
@@ -32,8 +33,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSuc
       });
       if (onSuccess) onSuccess(report);
       onClose();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to submit report');
+    } catch (err: unknown) {
+      setErrorMsg(getApiErrorMessage(err, 'Failed to submit report'));
     } finally {
       setSubmitting(false);
     }

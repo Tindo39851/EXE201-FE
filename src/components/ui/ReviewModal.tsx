@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { getApiErrorMessage } from '@/services/api-client';
 import { X, Award, Star, Sparkles } from 'lucide-react';
 import { reputationService } from '@/features/reputation/services/reputation.service';
 import type { ReputationReview } from '@/features/reputation/types/reputation.types';
@@ -34,8 +35,8 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, onSuc
       });
       if (onSuccess) onSuccess(review);
       onClose();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to submit review');
+    } catch (err: unknown) {
+      setErrorMsg(getApiErrorMessage(err, 'Failed to submit review'));
     } finally {
       setSubmitting(false);
     }

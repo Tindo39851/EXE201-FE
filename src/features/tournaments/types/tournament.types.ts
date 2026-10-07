@@ -26,3 +26,13 @@ export interface MatchBracketNode {
   team2: { name: string; score: number | string; won?: boolean };
   status: 'COMPLETED' | 'LIVE' | 'SCHEDULED';
 }
+
+export interface TournamentRegistration {
+  id?: string;
+  teamName?: string;
+  status?: string;
+  captainDiscord?: string;
+  tournamentId?: string;
+}
+
+export type TournamentTeamData = Record<string, unknown>;

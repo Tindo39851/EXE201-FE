@@ -1,4 +1,4 @@
-import { apiClient } from '@/services/api-client';
+import { apiClient, getApiErrorMessage, getApiErrorStatus } from '@/services/api-client';
 import type { PlatformMetrics, ReputationReport, ReputationReview, TopRepPlayer, CreateReviewDto, CreateReportDto } from '../types/reputation.types';
 
 const MOCK_METRICS: PlatformMetrics = {
@@ -71,11 +71,11 @@ export const reputationService = {
     try {
       const response = await apiClient.post<ReputationReview>('/reputation/reviews', dto);
       return response.data;
-    } catch (err: any) {
-      if (err?.statusCode === 401) {
+    } catch (err: unknown) {
+      if (getApiErrorStatus(err) === 401) {
         throw new Error('Please sign in to submit a review');
       }
-      throw new Error(err?.message || 'Failed to submit review');
+      throw new Error(getApiErrorMessage(err, 'Failed to submit review'));
     }
   },
 
@@ -83,11 +83,11 @@ export const reputationService = {
     try {
       const response = await apiClient.post<ReputationReport>('/reputation/reports', dto);
       return response.data;
-    } catch (err: any) {
-      if (err?.statusCode === 401) {
+    } catch (err: unknown) {
+      if (getApiErrorStatus(err) === 401) {
         throw new Error('Please sign in to submit a report');
       }
-      throw new Error(err?.message || 'Failed to submit report');
+      throw new Error(getApiErrorMessage(err, 'Failed to submit report'));
     }
   },
 };

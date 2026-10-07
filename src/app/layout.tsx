@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Orbitron, Rajdhani, Share_Tech_Mono } from "next/font/google";
 import "./globals.css";
+import "@livekit/components-styles";
 
 const orbitron = Orbitron({
   subsets: ["latin"],

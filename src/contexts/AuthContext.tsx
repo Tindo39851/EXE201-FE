@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { apiClient } from '@/services/api-client';
-import type { AuthUser } from '@/types';
+import type { AuthPayload, AuthUser } from '@/types';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -26,6 +26,9 @@ const AuthContext = createContext<AuthContextType>({
   updateProfile: async () => {},
 });
 
+const unwrapAuthUser = (payload: AuthPayload): AuthUser =>
+  'user' in payload ? payload.user : payload;
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
+    // Initial session hydration is intentionally triggered once on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCurrentUser();
 
     const handleUnauthorized = () => setUser(null);
@@ -50,15 +55,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [fetchCurrentUser]);
 
   const login = async (emailOrUsername: string, password: string): Promise<AuthUser> => {
-    const res = await apiClient.post<any>('/auth/login', { emailOrUsername, password });
-    const userData: AuthUser = res.data?.user || res.data;
+    const res = await apiClient.post<AuthPayload>('/auth/login', { emailOrUsername, password });
+    const userData = unwrapAuthUser(res.data);
     setUser(userData);
     return userData;
   };
 
   const register = async (username: string, email: string, password: string) => {
-    const res = await apiClient.post<any>('/auth/register', { username, email, password });
-    setUser(res.data?.user || res.data);
+    const res = await apiClient.post<AuthPayload>('/auth/register', { username, email, password });
+    setUser(unwrapAuthUser(res.data));
   };
 
   const sendRegistrationOtp = async (username: string, email: string) => {
@@ -66,8 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const verifyRegistrationOtp = async (username: string, email: string, password: string, otp: string) => {
-    const res = await apiClient.post<any>('/auth/verify-registration-otp', { username, email, password, otp });
-    setUser(res.data?.user || res.data);
+    const res = await apiClient.post<AuthPayload>('/auth/verify-registration-otp', { username, email, password, otp });
+    setUser(unwrapAuthUser(res.data));
   };
 
   const logout = async () => {
@@ -79,8 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (avatarUrl: string) => {
-    const res = await apiClient.put<any>('/auth/profile', { avatarUrl });
-    setUser(res.data?.user || res.data);
+    const res = await apiClient.put<AuthPayload>('/auth/profile', { avatarUrl });
+    setUser(unwrapAuthUser(res.data));
   };
 
   return (

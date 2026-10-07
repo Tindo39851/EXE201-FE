@@ -28,6 +28,8 @@ export const PlayerSlot: React.FC<PlayerSlotProps> = ({ member, isEmpty }) => {
 
   return (
     <div
+      role="group"
+      aria-label={`${member.username} microphone ${member.muted ? 'muted' : 'active'}`}
       className={`relative w-48 h-56 rounded-xl p-4 flex flex-col items-center justify-between transition-all duration-300 ${
         isCurrentUser
           ? 'bg-[#0B0F17] border-2 border-gt-cyan shadow-[0_0_20px_rgba(0,240,255,0.25)]'
@@ -82,7 +84,7 @@ export const PlayerSlot: React.FC<PlayerSlotProps> = ({ member, isEmpty }) => {
           {member.username}
         </h4>
         <div className="flex items-center justify-center gap-1.5 text-[11px] font-mono text-gray-400 mt-1">
-          <span>{member.role || 'Player'}</span>
+          <span>{member.connectionQuality || member.role || 'Player'}</span>
           <span>·</span>
           <span className="text-gray-300">{member.rank || 'Unranked'}</span>
         </div>

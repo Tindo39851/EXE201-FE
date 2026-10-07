@@ -1,17 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Mic, MicOff, Volume2, VolumeX, Monitor, Settings, PhoneOff } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, PhoneOff } from 'lucide-react';
+import { MediaDeviceMenu } from '@livekit/components-react';
 import type { VoiceRoom } from '../types/voice.types';
 
 interface VoiceControlsProps {
   room: VoiceRoom;
   isMuted: boolean;
   isDeafened: boolean;
-  isScreenSharing: boolean;
+  connectionState: string;
+  controlError?: string | null;
   onToggleMute: () => void;
   onToggleDeafen: () => void;
-  onToggleScreenShare: () => void;
   onLeaveRoom: () => void;
 }
 
@@ -19,10 +20,10 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
   room,
   isMuted,
   isDeafened,
-  isScreenSharing,
+  connectionState,
+  controlError,
   onToggleMute,
   onToggleDeafen,
-  onToggleScreenShare,
   onLeaveRoom,
 }) => {
   return (
@@ -37,8 +38,9 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 mt-0.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
-          <span>CONNECTED · {room.ping}ms</span>
+          <span>{connectionState.toUpperCase()}</span>
         </div>
+        {controlError && <p className="mt-1 text-[10px] text-rose-400">{controlError}</p>}
       </div>
 
       {/* Right: Audio / Voice Action Buttons */}
@@ -69,26 +71,9 @@ export const VoiceControls: React.FC<VoiceControlsProps> = ({
           {isDeafened ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
         </button>
 
-        {/* Screen Share */}
-        <button
-          onClick={onToggleScreenShare}
-          title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
-          className={`p-3 rounded-xl border transition-all duration-200 active:scale-95 ${
-            isScreenSharing
-              ? 'bg-cyan-950/60 border-gt-cyan text-gt-cyan shadow-[0_0_15px_rgba(0,240,255,0.3)]'
-              : 'bg-[#121824] border-gray-800 hover:border-gray-700 text-gray-200 hover:text-white'
-          }`}
-        >
-          <Monitor className="w-4 h-4" />
-        </button>
-
-        {/* Settings */}
-        <button
-          title="Voice Settings"
-          className="p-3 rounded-xl border bg-[#121824] border-gray-800 hover:border-gray-700 text-gray-200 hover:text-white transition-all duration-200 active:scale-95"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
+        <div title="Select microphone" className="voice-device-menu">
+          <MediaDeviceMenu kind="audioinput" requestPermissions={false} />
+        </div>
 
         {/* Disconnect Button */}
         <button

@@ -1,5 +1,5 @@
-import { apiClient } from '@/services/api-client';
-import type { PlayerProfile, SquadFilterDto, MatchmakingRequestDto, MatchmakingResult } from '../types/squad.types';
+import { apiClient, getApiErrorMessage, getApiErrorStatus } from '@/services/api-client';
+import type { PlayerProfile, SquadFilterDto, MatchmakingRequestDto, MatchmakingResult, SquadInvite } from '../types/squad.types';
 
 const MOCK_PLAYERS: PlayerProfile[] = [
   {
@@ -141,17 +141,17 @@ export const squadService = {
     try {
       const response = await apiClient.post<{ success: boolean; message: string }>(`/squads/invite/${playerId}`);
       return response.data;
-    } catch (err: any) {
-      if (err?.statusCode === 401) {
+    } catch (err: unknown) {
+      if (getApiErrorStatus(err) === 401) {
         throw new Error('Please log in to invite players');
       }
       return { success: true, message: `Invite dispatched to ${playerId}` };
     }
   },
 
-  async getMyInvites(): Promise<any[]> {
+  async getMyInvites(): Promise<SquadInvite[]> {
     try {
-      const response = await apiClient.get<any[]>('/squads/invites/my');
+      const response = await apiClient.get<SquadInvite[]>('/squads/invites/my');
       return response.data || [];
     } catch {
       return [];
@@ -166,8 +166,8 @@ export const squadService = {
         { params: { accept } }
       );
       return response.data;
-    } catch (err: any) {
-      return { success: false, message: err?.message || 'Failed to respond to invite' };
+    } catch (err: unknown) {
+      return { success: false, message: getApiErrorMessage(err, 'Failed to respond to invite') };
     }
   },
 };

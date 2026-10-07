@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Trophy, Users, Shield, Zap, Sparkles } from 'lucide-react';
+import { X, Trophy, Zap } from 'lucide-react';
 import type { Tournament } from '@/features/tournaments/types/tournament.types';
 import { formatCurrency } from '@/lib/utils';
 
 import { tournamentService } from '@/features/tournaments/services/tournament.service';
+import { getApiErrorMessage } from '@/services/api-client';
 
 interface TournamentRegisterModalProps {
   tournament: Tournament | null;
@@ -37,8 +38,8 @@ export const TournamentRegisterModal: React.FC<TournamentRegisterModalProps> = (
         setIsSuccess(false);
         onClose();
       }, 1500);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Registration failed');
+    } catch (err: unknown) {
+      setErrorMsg(getApiErrorMessage(err, 'Registration failed'));
     } finally {
       setSubmitting(false);
     }
@@ -131,10 +132,11 @@ export const TournamentRegisterModal: React.FC<TournamentRegisterModalProps> = (
 
             <button
               type="submit"
+              disabled={submitting}
               className="w-full py-3.5 bg-gt-cyan hover:bg-white text-black font-orbitron text-xs font-black uppercase tracking-widest transition-all duration-300 cyber-cut shimmer-effect flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(0,240,255,0.4)] active:scale-95"
             >
               <Zap size={15} />
-              <span>CONFIRM BRACKET SEEDING</span>
+              <span>{submitting ? 'TRANSMITTING...' : 'CONFIRM BRACKET SEEDING'}</span>
             </button>
           </form>
         )}

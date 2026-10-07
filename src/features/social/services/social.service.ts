@@ -1,4 +1,4 @@
-import { apiClient } from '@/services/api-client';
+import { apiClient, getApiErrorStatus } from '@/services/api-client';
 import type { SocialPost, OnlinePlayer, TrendingTag, CreatePostDto } from '../types/social.types';
 
 const MOCK_POSTS: SocialPost[] = [
@@ -102,8 +102,8 @@ export const socialService = {
     try {
       const response = await apiClient.post<SocialPost>('/social/posts', dto);
       return response.data;
-    } catch (err: any) {
-      if (err?.statusCode === 401) {
+    } catch (err: unknown) {
+      if (getApiErrorStatus(err) === 401) {
         throw new Error('Please sign in to publish a post');
       }
       return {

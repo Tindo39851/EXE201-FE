@@ -1,5 +1,5 @@
-import { apiClient } from '@/services/api-client';
-import type { Tournament, TournamentFilterDto, MatchBracketNode } from '../types/tournament.types';
+import { apiClient, getApiErrorMessage, getApiErrorStatus } from '@/services/api-client';
+import type { Tournament, TournamentFilterDto, MatchBracketNode, TournamentRegistration, TournamentTeamData } from '../types/tournament.types';
 
 const MOCK_TOURNAMENTS: Tournament[] = [
   {
@@ -108,21 +108,21 @@ export const tournamentService = {
     }
   },
 
-  async registerTeam(tournamentId: string, teamData?: any): Promise<{ success: boolean; message: string }> {
+  async registerTeam(tournamentId: string, teamData?: TournamentTeamData): Promise<{ success: boolean; message: string }> {
     try {
       const response = await apiClient.post(`/tournaments/${tournamentId}/register`, teamData);
       return response.data;
-    } catch (err: any) {
-      if (err?.statusCode === 401) {
+    } catch (err: unknown) {
+      if (getApiErrorStatus(err) === 401) {
         throw new Error('Please sign in to register your squad for this tournament');
       }
-      throw new Error(err?.message || 'Failed to register for tournament');
+      throw new Error(getApiErrorMessage(err, 'Failed to register for tournament'));
     }
   },
 
-  async getMyTournaments(): Promise<any[]> {
+  async getMyTournaments(): Promise<TournamentRegistration[]> {
     try {
-      const response = await apiClient.get<any[]>('/tournaments/my');
+      const response = await apiClient.get<TournamentRegistration[]>('/tournaments/my');
       return response.data || [];
     } catch {
       return [];

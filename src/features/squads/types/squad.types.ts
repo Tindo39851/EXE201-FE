@@ -44,3 +44,10 @@ export interface MatchmakingResult {
   voiceChannelUrl: string;
   status: 'QUEUED' | 'MATCHED' | 'FAILED';
 }
+
+export interface SquadInvite {
+  id: string;
+  invitedBy?: string;
+  playerId?: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+}

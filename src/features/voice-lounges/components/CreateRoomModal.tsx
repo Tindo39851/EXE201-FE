@@ -2,19 +2,19 @@
 
 import React, { useState } from 'react';
 import { X, Mic, Users, Shield } from 'lucide-react';
-import type { CreateRoomDto, RoomTag, RoomVisibility } from '../types/voice.types';
+import type { CreateRoomDto, RoomTag, RoomVisibility, VoiceRoom } from '../types/voice.types';
 
 interface CreateRoomModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (dto: CreateRoomDto) => Promise<any>;
+  onSubmit: (dto: CreateRoomDto) => Promise<VoiceRoom>;
 }
 
 const AVAILABLE_GAMES = [
   { id: 'league-of-legends', name: 'League of Legends' },
   { id: 'free-fire', name: 'Free Fire' },
+  { id: 'lien-quan', name: 'Liên Quân' },
   { id: 'valorant', name: 'Valorant' },
-  { id: 'cs2', name: 'Counter-Strike 2' },
 ];
 
 const AVAILABLE_TAGS: RoomTag[] = [
