@@ -11,15 +11,30 @@ interface RoomChatProps {
 
 export const RoomChat: React.FC<RoomChatProps> = ({ messages, onSendMessage }) => {
   const [inputText, setInputText] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
+  const previousLastMessageIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    scrollToBottom();
+    const lastMessageId = messages.at(-1)?.id;
+    if (lastMessageId === previousLastMessageIdRef.current) return;
+
+    const scrollArea = scrollAreaRef.current;
+    if (scrollArea && shouldAutoScrollRef.current) {
+      scrollArea.scrollTo({
+        top: scrollArea.scrollHeight,
+        behavior: previousLastMessageIdRef.current ? 'smooth' : 'auto',
+      });
+    }
+    previousLastMessageIdRef.current = lastMessageId;
   }, [messages]);
+
+  const handleChatScroll = () => {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea) return;
+    const distanceFromBottom = scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight;
+    shouldAutoScrollRef.current = distanceFromBottom < 48;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +59,11 @@ export const RoomChat: React.FC<RoomChatProps> = ({ messages, onSendMessage }) =
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-800">
+      <div
+        ref={scrollAreaRef}
+        onScroll={handleChatScroll}
+        className="flex-1 p-4 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-800"
+      >
         {messages.map(msg => {
           if (msg.isSystem) {
             return (
@@ -81,7 +100,6 @@ export const RoomChat: React.FC<RoomChatProps> = ({ messages, onSendMessage }) =
             </div>
           );
         })}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Form */}

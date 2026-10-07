@@ -50,6 +50,11 @@ test('two users join, publish microphone, mute, deafen and disconnect', async ({
     await expect(demoPage.getByRole('heading', { name: 'admin', exact: true })).toBeVisible();
     await expect(adminPage.getByRole('heading', { name: 'demo', exact: true })).toBeVisible();
 
+    await demoPage.evaluate(() => window.scrollTo(0, 0));
+    const initialPageScroll = await demoPage.evaluate(() => window.scrollY);
+    await demoPage.waitForTimeout(3_500);
+    expect(await demoPage.evaluate(() => window.scrollY)).toBe(initialPageScroll);
+
     const muteButton = demoPage.getByTitle('Mute Microphone');
     await muteButton.click();
     await expect(demoPage.getByTitle('Unmute Microphone')).toBeVisible();
