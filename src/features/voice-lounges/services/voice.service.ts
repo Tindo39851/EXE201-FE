@@ -355,6 +355,9 @@ export const voiceService = {
               count: voiceChannels.length || 2,
             };
           });
+        if (items.length === 0) {
+          return INITIAL_GAMES;
+        }
         const totalCount = items.reduce((sum, g) => sum + g.count, 0);
         return [{ id: 'all', name: 'ALL GAMES', shortName: 'ALL', count: totalCount }, ...items];
       }

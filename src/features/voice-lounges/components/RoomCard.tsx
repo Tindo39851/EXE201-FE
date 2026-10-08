@@ -53,6 +53,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onJoin }) => {
       case 'Tryhard':
       case 'Booyah Tryhard':
         return 'bg-purple-950/40 text-purple-400 border-purple-500/30';
+      case 'Tất cả rank':
+      case 'All Ranks':
+        return 'bg-blue-950/40 text-blue-400 border-blue-500/30';
       default:
         return 'bg-gray-800/40 text-gray-300 border-gray-700/50';
     }
@@ -72,6 +75,8 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onJoin }) => {
     slots.push(room.members[i] || null);
   }
 
+  const displayRank = room.rankRequirement || room.tag;
+
   return (
     <div className="group relative bg-[#0B0F17]/90 border border-gray-800/80 hover:border-gt-cyan/50 rounded-xl p-5 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.6)] flex flex-col justify-between">
       {/* Top Header: Title & Ping */}
@@ -88,10 +93,10 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onJoin }) => {
 
         {/* Badges: Tag, Play Mode & Visibility */}
         <div className="flex items-center gap-2 mb-6 flex-wrap">
-          <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded border ${getTagStyle(room.tag)}`}>
-            {room.tag}
+          <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded border ${getTagStyle(displayRank)}`}>
+            {displayRank}
           </span>
-          {room.playMode && room.playMode !== room.tag && (
+          {room.playMode && (
             <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded border ${getTagStyle(room.playMode)}`}>
               {room.playMode}
             </span>

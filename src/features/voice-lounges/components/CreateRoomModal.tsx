@@ -78,7 +78,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       await onSubmit({
         name: name.trim(),
         gameId,
-        tag: rank !== 'Tất cả rank' ? rank : playstyle,
+        tag: rank,
         rankRequirement: rank,
         playMode: playstyle,
         capacity,

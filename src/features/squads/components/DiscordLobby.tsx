@@ -4,9 +4,107 @@ import React, { useState } from 'react';
 import { Hash, Mic, ChevronDown, Check, Zap, Radio, Volume2, UserCheck } from 'lucide-react';
 import { useSquadMatchmaking } from '../hooks/useSquadMatchmaking';
 
-const MY_ROLES = ['Top', 'Jungle', 'Mid', 'Bot', 'Support', 'Fill'];
-const REGIONS = ['NA', 'EUW', 'EUNE', 'KR', 'OCE', 'SEA'];
-const SQUAD_ROLES = ['Top', 'Jungle', 'Mid', 'Bot', 'Support', 'Any'];
+const REGIONS = ['VN', 'SEA', 'NA', 'EUW', 'KR', 'OCE'];
+
+interface ChannelCategory {
+  title: string;
+  dotColor: string;
+  channels: { id: string; name: string; count: number; activeStyle: string }[];
+}
+
+export const GAME_ROLES_MAP: Record<string, { myRoles: string[]; squadRoles: string[] }> = {
+  LoL: {
+    myRoles: ['Top', 'Jungle', 'Mid', 'Bot', 'Support', 'Fill'],
+    squadRoles: ['Top', 'Jungle', 'Mid', 'Bot', 'Support', 'Any'],
+  },
+  VAL: {
+    myRoles: ['Duelist', 'Initiator', 'Controller', 'Sentinel', 'Fill'],
+    squadRoles: ['Duelist', 'Initiator', 'Controller', 'Sentinel', 'Any'],
+  },
+  LQ: {
+    myRoles: ['Caesar', 'Jungle', 'Mid', 'Dragon', 'Support', 'Fill'],
+    squadRoles: ['Caesar', 'Jungle', 'Mid', 'Dragon', 'Support', 'Any'],
+  },
+  FF: {
+    myRoles: ['Rusher', 'Sniper', 'Bomber', 'Support', 'Rifler', 'Fill'],
+    squadRoles: ['Rusher', 'Sniper', 'Bomber', 'Support', 'Rifler', 'Any'],
+  },
+};
+
+export const GAME_CHANNELS_MAP: Record<string, ChannelCategory[]> = {
+  LoL: [
+    {
+      title: '— RANKED',
+      dotColor: 'bg-gt-cyan',
+      channels: [
+        { id: 'ranked-solo-duo', name: 'ranked-solo-duo', count: 667, activeStyle: 'bg-gt-cyan/15 border-l-2 border-gt-cyan text-gt-cyan' },
+        { id: 'flex-queue', name: 'flex-queue', count: 222, activeStyle: 'bg-gt-cyan/15 border-l-2 border-gt-cyan text-gt-cyan' },
+      ],
+    },
+    {
+      title: '— CASUAL',
+      dotColor: 'bg-gt-yellow',
+      channels: [
+        { id: 'aram', name: 'aram', count: 174, activeStyle: 'bg-gt-yellow/15 border-l-2 border-gt-yellow text-gt-yellow' },
+        { id: 'normals', name: 'normals', count: 40, activeStyle: 'bg-gt-yellow/15 border-l-2 border-gt-yellow text-gt-yellow' },
+      ],
+    },
+  ],
+  VAL: [
+    {
+      title: '— COMPETITIVE',
+      dotColor: 'bg-gt-red',
+      channels: [
+        { id: 'val-competitive', name: 'competitive', count: 812, activeStyle: 'bg-gt-red/15 border-l-2 border-gt-red text-gt-red' },
+        { id: 'val-premier', name: 'premier', count: 345, activeStyle: 'bg-gt-red/15 border-l-2 border-gt-red text-gt-red' },
+      ],
+    },
+    {
+      title: '— CASUAL',
+      dotColor: 'bg-gt-yellow',
+      channels: [
+        { id: 'val-unrated', name: 'unrated', count: 210, activeStyle: 'bg-gt-yellow/15 border-l-2 border-gt-yellow text-gt-yellow' },
+        { id: 'val-swiftplay', name: 'swiftplay', count: 130, activeStyle: 'bg-gt-yellow/15 border-l-2 border-gt-yellow text-gt-yellow' },
+      ],
+    },
+  ],
+  LQ: [
+    {
+      title: '— ĐẤU HẠNG',
+      dotColor: 'bg-gt-blue',
+      channels: [
+        { id: 'lq-dau-hang', name: 'dau-hang-5v5', count: 720, activeStyle: 'bg-gt-blue/15 border-l-2 border-gt-blue text-gt-blue' },
+        { id: 'lq-dinh-cao', name: 'dinh-cao', count: 290, activeStyle: 'bg-gt-blue/15 border-l-2 border-gt-blue text-gt-blue' },
+      ],
+    },
+    {
+      title: '— THƯỜNG & GIẢI TRÍ',
+      dotColor: 'bg-gt-yellow',
+      channels: [
+        { id: 'lq-dau-thuong', name: 'dau-thuong-5v5', count: 180, activeStyle: 'bg-gt-yellow/15 border-l-2 border-gt-yellow text-gt-yellow' },
+        { id: 'lq-aram', name: 'aram-lien-quan', count: 95, activeStyle: 'bg-gt-yellow/15 border-l-2 border-gt-yellow text-gt-yellow' },
+      ],
+    },
+  ],
+  FF: [
+    {
+      title: '— RANKED CLIMB',
+      dotColor: 'bg-gt-orange',
+      channels: [
+        { id: 'ff-tu-chien-rank', name: 'tu-chien-cs-rank', count: 640, activeStyle: 'bg-gt-orange/15 border-l-2 border-gt-orange text-gt-orange' },
+        { id: 'ff-sinh-ton-rank', name: 'sinh-ton-br-rank', count: 480, activeStyle: 'bg-gt-orange/15 border-l-2 border-gt-orange text-gt-orange' },
+      ],
+    },
+    {
+      title: '— GIẢI TRÍ / CASUAL',
+      dotColor: 'bg-gt-yellow',
+      channels: [
+        { id: 'ff-tu-chien-casual', name: 'tu-chien-casual', count: 120, activeStyle: 'bg-gt-yellow/15 border-l-2 border-gt-yellow text-gt-yellow' },
+        { id: 'ff-sinh-ton-casual', name: 'sinh-ton-casual', count: 85, activeStyle: 'bg-gt-yellow/15 border-l-2 border-gt-yellow text-gt-yellow' },
+      ],
+    },
+  ],
+};
 
 const GAMES = [
   { id: 'LoL', name: 'League of Legends', count: '1,967 LFG', color: 'border-gt-cyan text-gt-cyan' },
@@ -27,11 +125,25 @@ export const DiscordLobby: React.FC = () => {
   const [selectedChannel, setSelectedChannel] = useState('ranked-solo-duo');
   const [selectedRole, setSelectedRole] = useState('Mid');
   const [selectedRank, setSelectedRank] = useState('Diamond');
-  const [selectedRegion, setSelectedRegion] = useState('NA');
+  const [selectedRegion, setSelectedRegion] = useState('VN');
   const [neededRoles, setNeededRoles] = useState<string[]>(['Jungle', 'Support']);
   const [micRequired, setMicRequired] = useState(true);
 
   const { isSearching, matchResult, error, startMatchmaking, resetMatchmaking } = useSquadMatchmaking();
+
+  const currentRoles = GAME_ROLES_MAP[selectedGame] || GAME_ROLES_MAP.LoL;
+  const currentCategories = GAME_CHANNELS_MAP[selectedGame] || GAME_CHANNELS_MAP.LoL;
+
+  const handleSelectGame = (gameId: string) => {
+    setSelectedGame(gameId);
+    const ranks = GAME_RANKS_MAP[gameId] || GAME_RANKS_MAP.LoL;
+    setSelectedRank(ranks[Math.min(5, ranks.length - 1)]);
+    const roles = GAME_ROLES_MAP[gameId] || GAME_ROLES_MAP.LoL;
+    setSelectedRole(roles.myRoles[0]);
+    setNeededRoles([roles.squadRoles[1], roles.squadRoles[2]]);
+    const channelCat = GAME_CHANNELS_MAP[gameId] || GAME_CHANNELS_MAP.LoL;
+    setSelectedChannel(channelCat[0].channels[0].name);
+  };
 
   const toggleNeededRole = (role: string) => {
     if (role === 'Any') {
@@ -144,87 +256,37 @@ export const DiscordLobby: React.FC = () => {
           </div>
         </div>
 
-        {/* Discord Channels */}
+        {/* Discord Channels (Dynamic per game) */}
         <div className="p-3 overflow-y-auto flex-1 space-y-5">
-          <div>
-            <div className="px-2 mb-1.5 flex items-center justify-between">
-              <span className="font-mono text-[10px] text-gt-text-dim uppercase tracking-widest font-bold">
-                — RANKED
-              </span>
-              <span className="w-1 h-1 bg-gt-cyan rounded-full"></span>
-            </div>
-            <div className="space-y-1">
-              <button
-                onClick={() => setSelectedChannel('ranked-solo-duo')}
-                className={`w-full text-left px-3 py-2 font-mono text-xs flex justify-between items-center transition-all cyber-cut-sm cursor-pointer ${
-                  selectedChannel === 'ranked-solo-duo'
-                    ? 'bg-gt-cyan/15 border-l-2 border-gt-cyan text-gt-cyan font-bold shadow-[0_0_12px_rgba(0,240,255,0.2)]'
-                    : 'text-gt-text-dim hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <span className="flex items-center gap-1.5 truncate">
-                  <Hash size={13} className="text-gt-cyan/60" />
-                  ranked-solo-duo
+          {currentCategories.map((category) => (
+            <div key={category.title}>
+              <div className="px-2 mb-1.5 flex items-center justify-between">
+                <span className="font-mono text-[10px] text-gt-text-dim uppercase tracking-widest font-bold">
+                  {category.title}
                 </span>
-                <span className="text-[10px] opacity-75 font-orbitron">(667)</span>
-              </button>
-
-              <button
-                onClick={() => setSelectedChannel('flex-queue')}
-                className={`w-full text-left px-3 py-2 font-mono text-xs flex justify-between items-center transition-all cyber-cut-sm cursor-pointer ${
-                  selectedChannel === 'flex-queue'
-                    ? 'bg-gt-cyan/15 border-l-2 border-gt-cyan text-gt-cyan font-bold'
-                    : 'text-gt-text-dim hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <span className="flex items-center gap-1.5 truncate">
-                  <Hash size={13} className="text-gt-text-dim/60" />
-                  flex-queue
-                </span>
-                <span className="text-[10px] opacity-75 font-orbitron">(222)</span>
-              </button>
+                <span className={`w-1 h-1 rounded-full ${category.dotColor}`}></span>
+              </div>
+              <div className="space-y-1">
+                {category.channels.map((ch) => (
+                  <button
+                    key={ch.id}
+                    onClick={() => setSelectedChannel(ch.name)}
+                    className={`w-full text-left px-3 py-2 font-mono text-xs flex justify-between items-center transition-all cyber-cut-sm cursor-pointer ${
+                      selectedChannel === ch.name
+                        ? `${ch.activeStyle} font-bold shadow-[0_0_12px_rgba(0,240,255,0.2)]`
+                        : 'text-gt-text-dim hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5 truncate">
+                      <Hash size={13} className="text-gt-cyan/60" />
+                      {ch.name}
+                    </span>
+                    <span className="text-[10px] opacity-75 font-orbitron">({ch.count})</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-
-          <div>
-            <div className="px-2 mb-1.5 flex items-center justify-between">
-              <span className="font-mono text-[10px] text-gt-text-dim uppercase tracking-widest font-bold">
-                — CASUAL
-              </span>
-              <span className="w-1 h-1 bg-gt-yellow rounded-full"></span>
-            </div>
-            <div className="space-y-1">
-              <button
-                onClick={() => setSelectedChannel('aram')}
-                className={`w-full text-left px-3 py-2 font-mono text-xs flex justify-between items-center transition-all cyber-cut-sm cursor-pointer ${
-                  selectedChannel === 'aram'
-                    ? 'bg-gt-yellow/15 border-l-2 border-gt-yellow text-gt-yellow font-bold'
-                    : 'text-gt-text-dim hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <span className="flex items-center gap-1.5 truncate">
-                  <Hash size={13} className="text-gt-yellow/60" />
-                  aram
-                </span>
-                <span className="text-[10px] opacity-75 font-orbitron">(174)</span>
-              </button>
-
-              <button
-                onClick={() => setSelectedChannel('normals')}
-                className={`w-full text-left px-3 py-2 font-mono text-xs flex justify-between items-center transition-all cyber-cut-sm cursor-pointer ${
-                  selectedChannel === 'normals'
-                    ? 'bg-gt-yellow/15 border-l-2 border-gt-yellow text-gt-yellow font-bold'
-                    : 'text-gt-text-dim hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <span className="flex items-center gap-1.5 truncate">
-                  <Hash size={13} className="text-gt-text-dim/60" />
-                  normals
-                </span>
-                <span className="text-[10px] opacity-75 font-orbitron">(40)</span>
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
         
         {/* Game Switcher Tabs */}
@@ -232,11 +294,7 @@ export const DiscordLobby: React.FC = () => {
           {GAMES.map((g) => (
             <button
               key={g.id}
-              onClick={() => {
-                setSelectedGame(g.id);
-                const ranks = GAME_RANKS_MAP[g.id] || GAME_RANKS_MAP.LoL;
-                setSelectedRank(ranks[Math.min(5, ranks.length - 1)]);
-              }}
+              onClick={() => handleSelectGame(g.id)}
               className={`w-9 h-9 rounded-sm border flex items-center justify-center font-orbitron font-extrabold text-[10px] transition-all cyber-cut-sm cursor-pointer ${
                 selectedGame === g.id
                   ? `${g.color} bg-white/10 scale-105 shadow-[0_0_10px_rgba(0,240,255,0.4)]`
@@ -299,7 +357,7 @@ export const DiscordLobby: React.FC = () => {
                   I Play As (Primary Role)
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  {MY_ROLES.map((role) => (
+                  {currentRoles.myRoles.map((role) => (
                     <button
                       key={role}
                       onClick={() => setSelectedRole(role)}
@@ -375,7 +433,7 @@ export const DiscordLobby: React.FC = () => {
                   Roles Needed in Lobby
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  {SQUAD_ROLES.map((role) => {
+                  {currentRoles.squadRoles.map((role) => {
                     const isActive = neededRoles.includes(role);
                     return (
                       <button
