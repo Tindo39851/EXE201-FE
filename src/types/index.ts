@@ -10,6 +10,7 @@ export interface AuthUser {
   role: 'MEMBER' | 'ADMIN';
   reputationScore: number;
   avatarUrl?: string;
+  walletBalance?: number;
 }
 
 export interface ApiResponse<T> {

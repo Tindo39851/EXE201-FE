@@ -1,19 +1,39 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Sparkles, LogOut } from 'lucide-react';
+import { Bell, Sparkles, LogOut, Wallet } from 'lucide-react';
 import { AuthModal } from '@/components/ui/AuthModal';
 import { InboxModal } from '@/components/ui/InboxModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { walletService } from '@/features/wallet/services/wallet.service';
 
 export default function Navbar() {
   const pathname = usePathname();
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [inboxOpen, setInboxOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      setWalletBalance(null);
+      return;
+    }
+    walletService.getBalance().then((bal) => setWalletBalance(bal));
+
+    const handleBalanceUpdate = (e: any) => {
+      if (typeof e.detail === 'number') {
+        setWalletBalance(e.detail);
+      } else {
+        walletService.getBalance().then((bal) => setWalletBalance(bal));
+      }
+    };
+    window.addEventListener('wallet:balance-updated', handleBalanceUpdate);
+    return () => window.removeEventListener('wallet:balance-updated', handleBalanceUpdate);
+  }, [user]);
 
   const navLinks = [
     { name: 'Squad Finder', href: '/squad-finder' },
@@ -126,6 +146,21 @@ export default function Navbar() {
                       {user.role} • REP {user.reputationScore ?? 99}
                     </span>
                   </div>
+                </Link>
+
+                <Link
+                  href="/wallet"
+                  title={`Ví GameTrust: ${walletBalance !== null ? walletBalance.toLocaleString('vi-VN') : '...'} VNĐ`}
+                  className="flex items-center gap-1.5 px-2.5 py-1 bg-gt-bg-card border border-yellow-500/40 hover:border-yellow-400 text-yellow-400 rounded-sm cyber-cut-sm shadow-[0_0_10px_rgba(234,179,8,0.2)] hover:shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all cursor-pointer font-orbitron text-xs font-bold"
+                >
+                  <Wallet size={14} className="text-yellow-400" />
+                  <span className="hidden sm:inline">
+                    {walletBalance !== null
+                      ? `${walletBalance >= 1000 ? Math.round(walletBalance / 1000) : walletBalance}K đ`
+                      : user.walletBalance !== undefined
+                      ? `${Math.round(user.walletBalance / 1000)}K đ`
+                      : '...'}
+                  </span>
                 </Link>
 
                 {user.role === 'ADMIN' && (
