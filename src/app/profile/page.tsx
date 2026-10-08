@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { tournamentService } from '@/features/tournaments/services/tournament.service';
+import { walletService } from '@/features/wallet/services/wallet.service';
 import type { TournamentRegistration } from '@/features/tournaments/types/tournament.types';
 import {
   ArrowLeft,
@@ -32,6 +33,17 @@ export default function ProfilePage() {
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    walletService.getBalance().then((bal) => setWalletBalance(bal));
+    const handleBalanceUpdate = (e: any) => {
+      if (typeof e.detail === 'number') setWalletBalance(e.detail);
+      else walletService.getBalance().then((bal) => setWalletBalance(bal));
+    };
+    window.addEventListener('wallet:balance-updated', handleBalanceUpdate);
+    return () => window.removeEventListener('wallet:balance-updated', handleBalanceUpdate);
+  }, []);
 
   useEffect(() => {
     const fetchMyTournaments = async () => {
@@ -158,6 +170,15 @@ export default function ProfilePage() {
                 <div className="font-mono text-xs text-gt-yellow flex items-center gap-2 pt-1 font-bold">
                   <Award size={14} />
                   <span>REPUTATION SCORE: {user.reputationScore ?? 100} / 100</span>
+                </div>
+
+                <div className="pt-2">
+                  <Link
+                    href="/wallet"
+                    className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/50 hover:border-yellow-400 text-yellow-400 font-orbitron text-xs font-bold uppercase rounded-sm cyber-cut-sm shadow-[0_0_12px_rgba(234,179,8,0.2)] transition-all"
+                  >
+                    <span>⚡ NẠP TIỀN / VÍ ({walletBalance !== null ? walletBalance.toLocaleString('vi-VN') : (user.walletBalance ?? 0).toLocaleString('vi-VN')} đ)</span>
+                  </Link>
                 </div>
               </div>
             </div>
