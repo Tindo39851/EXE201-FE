@@ -10,21 +10,39 @@ interface CreateRoomModalProps {
   onSubmit: (dto: CreateRoomDto) => Promise<VoiceRoom>;
 }
 
-const AVAILABLE_GAMES = [
-  { id: 'league-of-legends', name: 'League of Legends' },
+export const AVAILABLE_GAMES = [
+  { id: 'league-of-legends', name: 'Liên Minh Huyền Thoại (LoL)' },
+  { id: 'valorant', name: 'VALORANT' },
+  { id: 'lien-quan', name: 'Liên Quân Mobile' },
   { id: 'free-fire', name: 'Free Fire' },
-  { id: 'lien-quan', name: 'Liên Quân' },
-  { id: 'valorant', name: 'Valorant' },
 ];
 
-const AVAILABLE_TAGS: RoomTag[] = [
-  'Diamond Rank',
-  'Casual',
-  'Climbing',
-  'Clan Internal',
-  'Rank Tryhard',
-  'Heroic Ranked',
-];
+export const GAME_RANK_DATA: Record<string, { ranks: string[]; playstyles: string[] }> = {
+  'league-of-legends': {
+    ranks: [
+      'Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Emerald', 'Diamond', 'Master', 'Grandmaster', 'Challenger'
+    ],
+    playstyles: ['Casual', 'Leo Rank (Climbing)', 'Rank Tryhard', 'Clan Internal'],
+  },
+  'valorant': {
+    ranks: [
+      'Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Ascendant', 'Immortal', 'Radiant'
+    ],
+    playstyles: ['Casual', 'Leo Rank (Climbing)', 'Rank Tryhard', 'Clan Internal'],
+  },
+  'lien-quan': {
+    ranks: [
+      'Đồng', 'Bạc', 'Vàng', 'Bạch Kim', 'Kim Cương', 'Tinh Anh', 'Cao Thủ', 'Đại Cao Thủ', 'Chiến Tướng', 'Chiến Thần', 'Thách Đấu'
+    ],
+    playstyles: ['Đấu thường', 'Leo Rank', 'Rank Tryhard', 'Clan Internal'],
+  },
+  'free-fire': {
+    ranks: [
+      'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Heroic', 'Elite Heroic', 'Master', 'Elite Master', 'Grandmaster'
+    ],
+    playstyles: ['Đấu thường', 'Tử Chiến (CS)', 'Sinh Tồn (BR)', 'Booyah Tryhard', 'Clan Internal'],
+  },
+};
 
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   isOpen,
@@ -32,13 +50,24 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   onSubmit,
 }) => {
   const [name, setName] = useState('');
-  const [gameId, setGameId] = useState('league-of-legends');
-  const [tag, setTag] = useState<RoomTag>('Diamond Rank');
+  const [gameId, setGameId] = useState('valorant');
+  const [rank, setRank] = useState('Diamond');
+  const [playstyle, setPlaystyle] = useState('Leo Rank (Climbing)');
   const [capacity, setCapacity] = useState(5);
   const [visibility, setVisibility] = useState<RoomVisibility>('Public');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
+
+  const currentRankData = GAME_RANK_DATA[gameId] || GAME_RANK_DATA['valorant'];
+
+  const handleGameChange = (newGameId: string) => {
+    setGameId(newGameId);
+    const targetData = GAME_RANK_DATA[newGameId] || GAME_RANK_DATA['valorant'];
+    // Default to a popular mid-high rank for that game
+    setRank(targetData.ranks[5] || targetData.ranks[0]);
+    setPlaystyle(targetData.playstyles[1] || targetData.playstyles[0]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +78,9 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       await onSubmit({
         name: name.trim(),
         gameId,
-        tag,
+        tag: rank,
+        rankRequirement: rank,
+        playMode: playstyle,
         capacity,
         visibility,
       });
@@ -73,7 +104,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 CREATE VOICE LOUNGE
               </h2>
               <p className="text-xs font-mono text-gray-400">
-                Setup room parameters and invite operatives
+                Setup room parameters and invite operatives (4 Supported Games)
               </p>
             </div>
           </div>
@@ -96,7 +127,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               type="text"
               required
               maxLength={50}
-              placeholder="e.g. Late night ranked grind 🌙"
+              placeholder="e.g. Leo rank tryhard, mic tốt 🎙️"
               value={name}
               onChange={e => setName(e.target.value)}
               className="w-full bg-[#121824] border border-gray-800 focus:border-gt-cyan rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-500 font-rajdhani font-semibold outline-none transition-colors"
@@ -104,37 +135,59 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           </div>
 
           {/* Game Selection */}
+          <div>
+            <label className="block text-xs font-mono text-gray-300 uppercase tracking-wider mb-2">
+              Game Discipline
+            </label>
+            <select
+              value={gameId}
+              onChange={e => handleGameChange(e.target.value)}
+              className="w-full bg-[#121824] border border-gray-800 focus:border-gt-cyan rounded-lg px-3 py-2.5 text-xs text-white font-mono outline-none"
+            >
+              {AVAILABLE_GAMES.map(g => (
+                <option key={g.id} value={g.id} className="bg-[#0B0F17]">
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 2 Separate Fields: Bậc Rank & Chế độ / Mục tiêu */}
           <div className="grid grid-cols-2 gap-4">
+            {/* Field 1: Bậc Rank */}
             <div>
               <label className="block text-xs font-mono text-gray-300 uppercase tracking-wider mb-2">
-                Game Discipline
+                Bậc Rank (Rank Tier)
               </label>
               <select
-                value={gameId}
-                onChange={e => setGameId(e.target.value)}
+                value={rank}
+                onChange={e => setRank(e.target.value)}
                 className="w-full bg-[#121824] border border-gray-800 focus:border-gt-cyan rounded-lg px-3 py-2.5 text-xs text-white font-mono outline-none"
               >
-                {AVAILABLE_GAMES.map(g => (
-                  <option key={g.id} value={g.id} className="bg-[#0B0F17]">
-                    {g.name}
+                <option value="Tất cả rank" className="bg-[#0B0F17]">
+                  Tất cả rank (All Ranks)
+                </option>
+                {currentRankData.ranks.map(r => (
+                  <option key={r} value={r} className="bg-[#0B0F17]">
+                    {r}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Tag Selection */}
+            {/* Field 2: Chế độ & Mục tiêu */}
             <div>
               <label className="block text-xs font-mono text-gray-300 uppercase tracking-wider mb-2">
-                Room Tag
+                Chế độ & Mục tiêu (Play Mode)
               </label>
               <select
-                value={tag}
-                onChange={e => setTag(e.target.value as RoomTag)}
+                value={playstyle}
+                onChange={e => setPlaystyle(e.target.value)}
                 className="w-full bg-[#121824] border border-gray-800 focus:border-gt-cyan rounded-lg px-3 py-2.5 text-xs text-white font-mono outline-none"
               >
-                {AVAILABLE_TAGS.map(t => (
-                  <option key={t} value={t} className="bg-[#0B0F17]">
-                    {t}
+                {currentRankData.playstyles.map(p => (
+                  <option key={p} value={p} className="bg-[#0B0F17]">
+                    {p}
                   </option>
                 ))}
               </select>

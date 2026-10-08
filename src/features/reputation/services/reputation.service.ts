@@ -25,9 +25,9 @@ const MOCK_REVIEWS: ReputationReview[] = [
 
 const MOCK_TOP_PLAYERS: TopRepPlayer[] = [
   { rank: 1, name: 'AXIOM_V', game: 'Valorant', tier: 'Radiant', rep: '9.9', color: 'text-gt-cyan' },
-  { rank: 2, name: 'NULLSHIFT', game: 'CS2', tier: 'Global Elite', rep: '9.8', color: 'text-gt-green' },
+  { rank: 2, name: 'NULLSHIFT', game: 'Liên Quân', tier: 'Thách Đấu', rep: '9.8', color: 'text-gt-green' },
   { rank: 3, name: 'CR4WLER', game: 'League of Legends', tier: 'Challenger', rep: '9.7', color: 'text-gt-blue' },
-  { rank: 4, name: 'VECTOR_X', game: 'Apex Legends', tier: 'Predator', rep: '9.6', color: 'text-gt-purple' },
+  { rank: 4, name: 'VECTOR_X', game: 'Free Fire', tier: 'Grandmaster', rep: '9.6', color: 'text-gt-purple' },
 ];
 
 export const reputationService = {

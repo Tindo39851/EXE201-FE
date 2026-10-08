@@ -17,16 +17,45 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onJoin }) => {
   const getTagStyle = (tag: string) => {
     switch (tag) {
       case 'Diamond Rank':
+      case 'Diamond':
+      case 'Kim Cương':
+      case 'Ascendant':
+      case 'Emerald':
+      case 'Tinh Anh':
+      case 'Bạch Kim':
+      case 'Platinum':
         return 'bg-cyan-950/40 text-cyan-400 border-cyan-500/30';
       case 'Casual':
+      case 'Đấu thường':
+      case 'Sinh Tồn (BR)':
         return 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30';
       case 'Climbing':
+      case 'Leo Rank':
+      case 'Leo Rank (Climbing)':
       case 'Heroic Ranked':
+      case 'Heroic':
+      case 'Elite Heroic':
         return 'bg-rose-950/40 text-rose-400 border-rose-500/30';
       case 'Clan Internal':
-        return 'bg-amber-950/40 text-amber-400 border-amber-500/30';
+      case 'Master':
+      case 'Elite Master':
+      case 'Cao Thủ':
+      case 'Đại Cao Thủ':
+      case 'Chiến Tướng':
+      case 'Chiến Thần':
+      case 'Grandmaster':
+      case 'Radiant':
+      case 'Challenger':
+      case 'Thách Đấu':
+        return 'bg-amber-950/40 text-amber-400 border-amber-500/30 shadow-[0_0_8px_rgba(251,191,36,0.2)]';
       case 'Rank Tryhard':
+      case 'Immortal':
+      case 'Tryhard':
+      case 'Booyah Tryhard':
         return 'bg-purple-950/40 text-purple-400 border-purple-500/30';
+      case 'Tất cả rank':
+      case 'All Ranks':
+        return 'bg-blue-950/40 text-blue-400 border-blue-500/30';
       default:
         return 'bg-gray-800/40 text-gray-300 border-gray-700/50';
     }
@@ -46,6 +75,8 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onJoin }) => {
     slots.push(room.members[i] || null);
   }
 
+  const displayRank = room.rankRequirement || room.tag;
+
   return (
     <div className="group relative bg-[#0B0F17]/90 border border-gray-800/80 hover:border-gt-cyan/50 rounded-xl p-5 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.6)] flex flex-col justify-between">
       {/* Top Header: Title & Ping */}
@@ -60,11 +91,16 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onJoin }) => {
           </div>
         </div>
 
-        {/* Badges: Tag & Visibility */}
-        <div className="flex items-center gap-2 mb-6">
-          <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded border ${getTagStyle(room.tag)}`}>
-            {room.tag}
+        {/* Badges: Tag, Play Mode & Visibility */}
+        <div className="flex items-center gap-2 mb-6 flex-wrap">
+          <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded border ${getTagStyle(displayRank)}`}>
+            {displayRank}
           </span>
+          {room.playMode && (
+            <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded border ${getTagStyle(room.playMode)}`}>
+              {room.playMode}
+            </span>
+          )}
           <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-400">
             <span
               className={`w-1.5 h-1.5 rounded-full ${
