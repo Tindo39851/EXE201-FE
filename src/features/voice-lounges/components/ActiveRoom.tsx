@@ -113,6 +113,9 @@ const ConnectedRoom: React.FC<ConnectedRoomProps> = ({ initialRoom, mediaError }
           <span className={`w-2.5 h-2.5 rounded-full ${connectionState === ConnectionState.Connected ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-amber-400'}`} />
           <h2 className="font-orbitron font-bold text-white text-base tracking-wide">{currentRoom.name}</h2>
           <span className="text-[11px] font-mono text-cyan-400 bg-cyan-950/40 border border-cyan-500/30 px-2.5 py-0.5 rounded">{currentRoom.tag}</span>
+          {currentRoom.playMode && currentRoom.playMode !== currentRoom.tag && (
+            <span className="text-[11px] font-mono text-purple-400 bg-purple-950/40 border border-purple-500/30 px-2.5 py-0.5 rounded">{currentRoom.playMode}</span>
+          )}
         </div>
         <div className="flex items-center gap-1.5 text-xs font-mono text-gray-400">
           <Users className="w-4 h-4 text-gray-500" />

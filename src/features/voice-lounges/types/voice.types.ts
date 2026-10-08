@@ -14,15 +14,7 @@ export interface VoiceMember {
   connectionQuality?: string;
 }
 
-export type RoomTag = 
-  | 'Diamond Rank' 
-  | 'Casual' 
-  | 'Climbing' 
-  | 'Clan Internal' 
-  | 'Rank Tryhard' 
-  | 'Heroic Ranked' 
-  | 'Tournament'
-  | 'Chill';
+export type RoomTag = string;
 
 export type RoomVisibility = 'Public' | 'Clan Only' | 'Rank Tryhard' | 'Private';
 
@@ -32,6 +24,8 @@ export interface VoiceRoom {
   gameName: string;
   name: string;
   tag: RoomTag;
+  rankRequirement?: string;
+  playMode?: string;
   visibility: RoomVisibility;
   ping: number; // in ms
   capacity: number;
@@ -67,6 +61,8 @@ export interface CreateRoomDto {
   name: string;
   gameId: string;
   tag?: RoomTag;
+  rankRequirement?: string;
+  playMode?: string;
   capacity: number;
   visibility?: RoomVisibility;
 }

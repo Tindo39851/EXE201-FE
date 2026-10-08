@@ -10,10 +10,17 @@ const SQUAD_ROLES = ['Top', 'Jungle', 'Mid', 'Bot', 'Support', 'Any'];
 
 const GAMES = [
   { id: 'LoL', name: 'League of Legends', count: '1,967 LFG', color: 'border-gt-cyan text-gt-cyan' },
-  { id: 'VAL', name: 'Valorant', count: '2,410 LFG', color: 'border-gt-red text-gt-red' },
-  { id: 'CS2', name: 'Counter-Strike 2', count: '1,540 LFG', color: 'border-gt-yellow text-gt-yellow' },
-  { id: 'LQ', name: 'Liên Quân Mobile', count: '890 LFG', color: 'border-gt-blue text-gt-blue' },
+  { id: 'VAL', name: 'VALORANT', count: '2,410 LFG', color: 'border-gt-red text-gt-red' },
+  { id: 'LQ', name: 'Liên Quân Mobile', count: '1,890 LFG', color: 'border-gt-blue text-gt-blue' },
+  { id: 'FF', name: 'Free Fire', count: '1,540 LFG', color: 'border-gt-orange text-gt-orange' },
 ];
+
+const GAME_RANKS_MAP: Record<string, string[]> = {
+  LoL: ['Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Emerald', 'Diamond', 'Master', 'Grandmaster', 'Challenger'],
+  VAL: ['Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Ascendant', 'Immortal', 'Radiant'],
+  LQ: ['Đồng', 'Bạc', 'Vàng', 'Bạch Kim', 'Kim Cương', 'Tinh Anh', 'Cao Thủ', 'Đại Cao Thủ', 'Chiến Tướng', 'Chiến Thần', 'Thách Đấu'],
+  FF: ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Heroic', 'Elite Heroic', 'Master', 'Elite Master', 'Grandmaster'],
+};
 
 export const DiscordLobby: React.FC = () => {
   const [selectedGame, setSelectedGame] = useState('LoL');
@@ -225,7 +232,11 @@ export const DiscordLobby: React.FC = () => {
           {GAMES.map((g) => (
             <button
               key={g.id}
-              onClick={() => setSelectedGame(g.id)}
+              onClick={() => {
+                setSelectedGame(g.id);
+                const ranks = GAME_RANKS_MAP[g.id] || GAME_RANKS_MAP.LoL;
+                setSelectedRank(ranks[Math.min(5, ranks.length - 1)]);
+              }}
               className={`w-9 h-9 rounded-sm border flex items-center justify-center font-orbitron font-extrabold text-[10px] transition-all cyber-cut-sm cursor-pointer ${
                 selectedGame === g.id
                   ? `${g.color} bg-white/10 scale-105 shadow-[0_0_10px_rgba(0,240,255,0.4)]`
@@ -315,16 +326,11 @@ export const DiscordLobby: React.FC = () => {
                     onChange={(e) => setSelectedRank(e.target.value)}
                     className="w-full bg-[#080B12] border border-gt-border hover:border-gt-cyan text-white font-orbitron text-xs tracking-wider px-4 py-3 appearance-none focus:outline-none focus:border-gt-cyan transition-colors cyber-cut-sm cursor-pointer"
                   >
-                    <option value="Iron">Iron</option>
-                    <option value="Bronze">Bronze</option>
-                    <option value="Silver">Silver</option>
-                    <option value="Gold">Gold</option>
-                    <option value="Platinum">Platinum</option>
-                    <option value="Emerald">Emerald</option>
-                    <option value="Diamond">Diamond</option>
-                    <option value="Master">Master</option>
-                    <option value="Grandmaster">Grandmaster</option>
-                    <option value="Challenger">Challenger</option>
+                    {(GAME_RANKS_MAP[selectedGame] || GAME_RANKS_MAP.LoL).map((rank) => (
+                      <option key={rank} value={rank} className="bg-[#0B0F17]">
+                        {rank}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gt-cyan" />
                 </div>

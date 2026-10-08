@@ -9,13 +9,9 @@ import { Gamepad2, ArrowRight } from 'lucide-react';
 const GAMES = [
   'ALL',
   'Valorant',
-  'CS2',
   'League of Legends',
-  'Apex Legends',
   'Liên Quân',
   'Free Fire',
-  'Overwatch 2',
-  'Fortnite',
 ];
 
 export const SquadFinderSection: React.FC = () => {

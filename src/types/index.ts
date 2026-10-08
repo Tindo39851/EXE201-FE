@@ -48,10 +48,6 @@ export type AccentColor =
 export type GameTitle =
   | 'League of Legends'
   | 'Valorant'
-  | 'CS2'
-  | 'Apex Legends'
   | 'Liên Quân'
-  | 'Free Fire'
-  | 'Overwatch 2'
-  | 'Fortnite'
-  | 'Dota 2';
+  | 'Free Fire';
+

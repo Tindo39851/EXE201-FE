@@ -49,9 +49,9 @@ interface ApiChatMessage {
 const INITIAL_GAMES: GameHubItem[] = [
   { id: 'all', name: 'ALL GAMES', shortName: 'ALL', count: 8 },
   { id: 'league-of-legends', name: 'League of Legends', shortName: 'LOL', count: 2 },
-  { id: 'free-fire', name: 'Free Fire', shortName: 'FF', count: 2 },
-  { id: 'lien-quan', name: 'Liên Quân', shortName: 'AOV', count: 2 },
   { id: 'valorant', name: 'Valorant', shortName: 'VAL', count: 2 },
+  { id: 'lien-quan', name: 'Liên Quân Mobile', shortName: 'AOV', count: 2 },
+  { id: 'free-fire', name: 'Free Fire', shortName: 'FF', count: 2 },
 ];
 
 const SUPPORTED_GAME_IDS = new Set(['free-fire', 'league-of-legends', 'lien-quan', 'valorant']);
@@ -225,33 +225,33 @@ const INITIAL_ROOMS: VoiceRoom[] = [
   {
     id: 'room-aov-1',
     gameId: 'lien-quan',
-    gameName: 'Liên Quân',
-    name: 'Leo rank Cao Thủ',
-    tag: 'Climbing',
+    gameName: 'Liên Quân Mobile',
+    name: 'Leo rank Cao Thủ ⚔️',
+    tag: 'Cao Thủ',
     visibility: 'Public',
     ping: 16,
     capacity: 5,
     onlineCount: 4,
     members: [
-      { id: 'm30', userId: 'u30', username: 'AWP_KING', avatarLetter: 'A', avatarColor: '#FFD700', isHost: true },
-      { id: 'm31', userId: 'u31', username: 'FLASH_BANG', avatarLetter: 'F', avatarColor: '#00F0FF' },
-      { id: 'm32', userId: 'u32', username: 'SMOKE_MID', avatarLetter: 'S', avatarColor: '#00F0FF' },
-      { id: 'm33', userId: 'u33', username: 'DEFUSE', avatarLetter: 'D', avatarColor: '#00F0FF', muted: true },
+      { id: 'm30', userId: 'u30', username: 'NAKROTH', avatarLetter: 'N', avatarColor: '#FFD700', isHost: true, role: 'Rừng', rank: 'Cao Thủ' },
+      { id: 'm31', userId: 'u31', username: 'FLORENTINO', avatarLetter: 'F', avatarColor: '#00F0FF', role: 'Đường Tà Thần', rank: 'Cao Thủ' },
+      { id: 'm32', userId: 'u32', username: 'ELSU', avatarLetter: 'E', avatarColor: '#00F0FF', role: 'Xạ Thủ', rank: 'Tinh Anh' },
+      { id: 'm33', userId: 'u33', username: 'ALICE', avatarLetter: 'A', avatarColor: '#00F0FF', muted: true, role: 'Trợ Thủ', rank: 'Cao Thủ' },
     ],
   },
   {
     id: 'room-aov-2',
     gameId: 'lien-quan',
-    gameName: 'Liên Quân',
-    name: 'Đấu thường giao lưu',
-    tag: 'Rank Tryhard',
+    gameName: 'Liên Quân Mobile',
+    name: 'Chiến Tướng - 5v5 Tryhard 🔥',
+    tag: 'Chiến Tướng',
     visibility: 'Public',
     ping: 24,
     capacity: 5,
     onlineCount: 2,
     members: [
-      { id: 'm34', userId: 'u34', username: 'ENTRY_FRAG', avatarLetter: 'E', avatarColor: '#FFD700', isHost: true },
-      { id: 'm35', userId: 'u35', username: 'CLUTCH_GOD', avatarLetter: 'C', avatarColor: '#00F0FF' },
+      { id: 'm34', userId: 'u34', username: 'RAZ_QUYEN', avatarLetter: 'R', avatarColor: '#FFD700', isHost: true, role: 'Đường Giữa', rank: 'Chiến Tướng' },
+      { id: 'm35', userId: 'u35', username: 'ZUKA_PANDA', avatarLetter: 'Z', avatarColor: '#00F0FF', role: 'Đường Tà Thần', rank: 'Chiến Tướng' },
     ],
   },
 ];
@@ -343,16 +343,18 @@ export const voiceService = {
     try {
       const res = await apiClient.get<ApiGameHub[]>('/community/games');
       if (Array.isArray(res.data) && res.data.length > 0) {
-        // Map backend games to GameHubItem
-        const items: GameHubItem[] = res.data.map(g => {
-          const voiceChannels = (g.channels || []).filter(c => c.type === 'VOICE');
-          return {
-            id: g.id,
-            name: g.name,
-            shortName: g.shortName || g.name.substring(0, 3).toUpperCase(),
-            count: voiceChannels.length || 2,
-          };
-        });
+        // Map backend games to GameHubItem (only the 4 supported games)
+        const items: GameHubItem[] = res.data
+          .filter(g => SUPPORTED_GAME_IDS.has(g.id))
+          .map(g => {
+            const voiceChannels = (g.channels || []).filter(c => c.type === 'VOICE');
+            return {
+              id: g.id,
+              name: g.id === 'lien-quan' ? 'Liên Quân Mobile' : g.name,
+              shortName: g.shortName || g.name.substring(0, 3).toUpperCase(),
+              count: voiceChannels.length || 2,
+            };
+          });
         const totalCount = items.reduce((sum, g) => sum + g.count, 0);
         return [{ id: 'all', name: 'ALL GAMES', shortName: 'ALL', count: totalCount }, ...items];
       }
@@ -506,7 +508,9 @@ export const voiceService = {
           gameId: dto.gameId,
           gameName: dto.gameId.replace(/-/g, ' ').toUpperCase(),
           name: c.name,
-          tag: dto.tag || 'Casual',
+          tag: dto.tag || dto.rankRequirement || 'Casual',
+          rankRequirement: dto.rankRequirement,
+          playMode: dto.playMode,
           visibility: dto.visibility || 'Public',
           ping: 20,
           capacity: dto.capacity,
@@ -525,7 +529,9 @@ export const voiceService = {
       gameId: dto.gameId,
       gameName: dto.gameId.replace(/-/g, ' ').toUpperCase(),
       name: dto.name,
-      tag: dto.tag || 'Casual',
+      tag: dto.tag || dto.rankRequirement || 'Casual',
+      rankRequirement: dto.rankRequirement,
+      playMode: dto.playMode,
       visibility: dto.visibility || 'Public',
       ping: Math.floor(Math.random() * 20) + 14,
       capacity: dto.capacity,
