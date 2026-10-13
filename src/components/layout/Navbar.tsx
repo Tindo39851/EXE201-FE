@@ -38,6 +38,7 @@ export default function Navbar() {
   const navLinks = [
     { name: 'Squad Finder', href: '/squad-finder' },
     { name: 'Voice Lounges', href: '/voice-lounges' },
+    { name: 'AI Coach', href: '/ai-chat' },
     { name: 'Tournament', href: '/tournament' },
     { name: 'Clan', href: '/clan' },
     { name: 'Reputation', href: '/reputation' },
