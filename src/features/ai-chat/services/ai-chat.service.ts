@@ -1,5 +1,5 @@
 import { apiClient } from '@/services/api-client';
-import type { AiChatMessage, AiChatResponse, AiStatusResponse } from '../types/ai-chat.types';
+import type { AiChatMessage, AiChatResponse, AiPlayerAnalysisResponse, AiStatusResponse } from '../types/ai-chat.types';
 
 export const aiChatService = {
   async getStatus(): Promise<AiStatusResponse> {
@@ -9,6 +9,11 @@ export const aiChatService = {
 
   async chat(messages: AiChatMessage[]): Promise<AiChatResponse> {
     const response = await apiClient.post<AiChatResponse>('/ai/chat', { messages });
+    return response.data;
+  },
+
+  async analyzePlayer(playerData: Record<string, unknown>): Promise<AiPlayerAnalysisResponse> {
+    const response = await apiClient.post<AiPlayerAnalysisResponse>('/ai/analyze-player', { playerData });
     return response.data;
   },
 };
