@@ -31,9 +31,18 @@ import {
   XCircle,
   UserX,
   Sliders,
+  Bot,
+  ScanSearch,
+  Send,
+  Loader2,
+  FileCode2,
+  RotateCcw,
+  ArrowRight,
 } from 'lucide-react';
+import { aiChatService } from '@/features/ai-chat/services/ai-chat.service';
+import type { AiChatMessage, AiPlayerAnalysisResponse, AiStatusResponse } from '@/features/ai-chat/types/ai-chat.types';
 
-type AdminTab = 'overview' | 'operatives' | 'tournaments' | 'reports' | 'clans';
+type AdminTab = 'overview' | 'operatives' | 'tournaments' | 'reports' | 'clans' | 'ai-sentinel';
 
 export default function AdminPage() {
   const { user, loading, logout } = useAuth();
@@ -72,7 +81,44 @@ export default function AdminPage() {
   const [loadingClans, setLoadingClans] = useState(true);
   const [actingClanId, setActingClanId] = useState<string | number | null>(null);
 
+  // AI Sentinel & Moderation States
+  const [aiStatus, setAiStatus] = useState<AiStatusResponse | null>(null);
+  const [auditPresetKey, setAuditPresetKey] = useState<string>('toxic_heavy');
+  const [auditJson, setAuditJson] = useState<string>(JSON.stringify({
+    playerId: 'GT-8842',
+    username: 'ShadowDestroyer_99',
+    reputationScore: 35,
+    reports: [
+      { reason: 'toxic_chat', description: 'Chửi bới xúc phạm phụ huynh cả team từ phút thứ 10.', createdAt: '2026-10-13' },
+      { reason: 'griefing', description: 'Cố tình bán hết đồ, lao vào trụ địch tự sát và AFK phá rank.', createdAt: '2026-10-13' },
+      { reason: 'threat', description: 'Đe dọa sẽ tìm đến tận nhà đánh đồng đội sau trận đấu.', createdAt: '2026-10-12' },
+    ],
+    chatMessages: [
+      'cút mẹ chúng mày đi đánh như lũ óc',
+      'team rác rưởi t phá game cho chúng mày thua',
+      'bố m afk đây xem chúng mày thắng kiểu gì',
+      'hết trận t tìm m đấm chết',
+    ],
+    matchHistory: { recentMatches: 5, afkCount: 3, surrenderVotes: 4 },
+  }, null, 2));
+  const [auditAnalysis, setAuditAnalysis] = useState<AiPlayerAnalysisResponse | null>(null);
+  const [auditingPlayer, setAuditingPlayer] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [auditDecision, setAuditDecision] = useState<string | null>(null);
+
+  // Admin AI Chatbox States
+  const [adminAiMessages, setAdminAiMessages] = useState<AiChatMessage[]>([
+    {
+      role: 'assistant',
+      content: 'Xin chào Admin! Mình là GameTrust Copilot. Mình có thể hỗ trợ bạn thẩm định báo cáo vi phạm, tra cứu điều khoản xử phạt hoặc gợi ý phương án kỷ luật cho từng hành vi.',
+    },
+  ]);
+  const [adminAiInput, setAdminAiInput] = useState('');
+  const [adminAiSending, setAdminAiSending] = useState(false);
+  const [adminAiError, setAdminAiError] = useState<string | null>(null);
+
   useEffect(() => {
+    aiChatService.getStatus().then(setAiStatus).catch(() => setAiStatus(null));
     if (user?.role === 'ADMIN') {
       const loadAdminData = async () => {
         setLoadingUsers(true);
@@ -171,6 +217,141 @@ export default function AdminPage() {
       );
     } finally {
       setActingReportId(null);
+    }
+  };
+
+  const handleSelectAuditPreset = (key: 'toxic_heavy' | 'toxic_mild' | 'innocent') => {
+    setAuditPresetKey(key);
+    setAuditAnalysis(null);
+    setAuditError(null);
+    setAuditDecision(null);
+    if (key === 'toxic_heavy') {
+      setAuditJson(JSON.stringify({
+        playerId: 'GT-8842',
+        username: 'ShadowDestroyer_99',
+        reputationScore: 35,
+        reports: [
+          { reason: 'toxic_chat', description: 'Chửi bới xúc phạm phụ huynh cả team từ phút thứ 10.', createdAt: '2026-10-13' },
+          { reason: 'griefing', description: 'Cố tình bán hết đồ, lao vào trụ địch tự sát và AFK phá rank.', createdAt: '2026-10-13' },
+          { reason: 'threat', description: 'Đe dọa sẽ tìm đến tận nhà đánh đồng đội sau trận đấu.', createdAt: '2026-10-12' },
+        ],
+        chatMessages: [
+          'cút mẹ chúng mày đi đánh như lũ óc',
+          'team rác rưởi t phá game cho chúng mày thua',
+          'bố m afk đây xem chúng mày thắng kiểu gì',
+          'hết trận t tìm m đấm chết',
+        ],
+        matchHistory: { recentMatches: 5, afkCount: 3, surrenderVotes: 4 },
+      }, null, 2));
+    } else if (key === 'toxic_mild') {
+      setAuditJson(JSON.stringify({
+        playerId: 'GT-3195',
+        username: 'DragonSlayer_VN',
+        reputationScore: 82,
+        reports: [
+          { reason: 'toxic_chat', description: 'Spam chat cằn nhằn và chê bai đồng đội sau pha combat hỏng.', createdAt: '2026-10-13' },
+        ],
+        chatMessages: [
+          'sao đánh gà thế ông ơi, né skill cũng không xong',
+          'chán thật sự kéo tạ mệt quá',
+          'đánh cẩn thận lại đi đừng feed nữa',
+        ],
+        matchHistory: { recentMatches: 10, afkCount: 0, surrenderVotes: 1 },
+      }, null, 2));
+    } else {
+      setAuditJson(JSON.stringify({
+        playerId: 'GT-1002',
+        username: 'ProPlayer_Faker',
+        reputationScore: 98,
+        reports: [
+          { reason: 'toxic_chat', description: 'Đối thủ bị thua đậm nên cay cú tố cáo hack và toxic vô cớ.', createdAt: '2026-10-13' },
+        ],
+        chatMessages: [
+          'gg guys, nice play team!',
+          'chúc các bạn may mắn ở trận đấu sau',
+          'cảm ơn support đã cover rất tốt',
+        ],
+        matchHistory: { recentMatches: 15, afkCount: 0, surrenderVotes: 0 },
+      }, null, 2));
+    }
+  };
+
+  const handleAuditReportWithAi = (r: AdminReport) => {
+    setActiveTab('ai-sentinel');
+    setAuditPresetKey('custom');
+    setAuditAnalysis(null);
+    setAuditError(null);
+    setAuditDecision(null);
+    const data = {
+      playerId: r.id,
+      username: r.user,
+      reporter: r.reporter,
+      type: r.type,
+      reports: [
+        { reason: r.type.toLowerCase(), description: r.reason || 'Báo cáo vi phạm', createdAt: '2026-10-13' }
+      ],
+      chatMessages: [r.reason || 'Hành vi vi phạm được ghi nhận trong trận'],
+    };
+    setAuditJson(JSON.stringify(data, null, 2));
+    setAuditingPlayer(true);
+    aiChatService.analyzePlayer(data)
+      .then(res => setAuditAnalysis(res))
+      .catch((err: any) => setAuditError(err?.message || 'Không thể phân tích báo cáo'))
+      .finally(() => setAuditingPlayer(false));
+  };
+
+  const handleExecuteAuditPlayer = async () => {
+    if (auditingPlayer) return;
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(auditJson);
+    } catch {
+      setAuditError('JSON không hợp lệ. Vui lòng kiểm tra lại cú pháp.');
+      return;
+    }
+    setAuditError(null);
+    setAuditAnalysis(null);
+    setAuditDecision(null);
+    setAuditingPlayer(true);
+    try {
+      const res = await aiChatService.analyzePlayer(parsed);
+      setAuditAnalysis(res);
+    } catch (err: any) {
+      setAuditError(err?.message || 'Không thể thẩm định dữ liệu player.');
+    } finally {
+      setAuditingPlayer(false);
+    }
+  };
+
+  const handleSendAdminAi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const content = adminAiInput.trim();
+    if (!content || adminAiSending) return;
+
+    const newMsgs = [...adminAiMessages, { role: 'user' as const, content }];
+    setAdminAiMessages(newMsgs);
+    setAdminAiInput('');
+    setAdminAiError(null);
+    setAdminAiSending(true);
+
+    try {
+      const res = await aiChatService.chat(newMsgs);
+      setAdminAiMessages(prev => [...prev, { role: 'assistant' as const, content: res.reply }]);
+    } catch (err: any) {
+      setAdminAiError(err?.message || 'Không thể kết nối AI Copilot.');
+    } finally {
+      setAdminAiSending(false);
+    }
+  };
+
+  const handleDiscussAuditInChat = () => {
+    if (!auditAnalysis) return;
+    try {
+      const parsed = JSON.parse(auditJson);
+      const name = parsed.username || parsed.playerId || 'Player';
+      setAdminAiInput(`Hãy đánh giá chi tiết hơn về mức độ nguy hiểm của ${name} (Toxicity: ${auditAnalysis.toxicityScore}/100, Đề xuất: ${auditAnalysis.recommendation}) và các rủi ro nếu không xử phạt nghiêm?`);
+    } catch {
+      setAdminAiInput('Hãy phân tích thêm về ca vi phạm này.');
     }
   };
 
@@ -307,6 +488,7 @@ export default function AdminPage() {
     { id: 'operatives', label: 'Operatives', icon: <Users size={16} />, badge: `${users.length}` },
     { id: 'tournaments', label: 'Tournaments', icon: <Trophy size={16} />, badge: `${tournaments.length}` },
     { id: 'reports', label: 'Moderation Reports', icon: <AlertTriangle size={16} />, badge: pendingReportsCount > 0 ? `${pendingReportsCount} NEW` : 'CLEAN' },
+    { id: 'ai-sentinel', label: 'AI Toxicity & Assistant', icon: <Bot size={16} />, badge: 'AI COPILOT' },
     { id: 'clans', label: 'Clans', icon: <Shield size={16} />, badge: `${clans.length}` },
   ];
 
@@ -1119,6 +1301,15 @@ export default function AdminPage() {
                                 {isPending ? (
                                   <div className="inline-flex items-center gap-2">
                                     <button
+                                      onClick={() => handleAuditReportWithAi(r)}
+                                      title="Thẩm định ticket này bằng AI Sentinel"
+                                      className="flex items-center gap-1 px-2.5 py-1 bg-gt-cyan/15 hover:bg-gt-cyan text-gt-cyan hover:text-black border border-gt-cyan/60 font-mono text-[10px] font-bold uppercase rounded-sm cyber-cut-sm transition-all cursor-pointer shadow-[0_0_8px_rgba(0,240,255,0.2)] active:scale-95"
+                                    >
+                                      <Sparkles size={11} />
+                                      <span>AI AUDIT</span>
+                                    </button>
+
+                                    <button
                                       onClick={() => handleResolveReport(r.id, 'PENALTY')}
                                       disabled={actingReportId === r.id}
                                       title="Penalize Operative (-20 Reputation Score)"
@@ -1267,6 +1458,331 @@ export default function AdminPage() {
                     </table>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: AI SENTINEL // MODERATION & COPILOT */}
+          {activeTab === 'ai-sentinel' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <div className="section-label text-gt-cyan mb-1 font-mono text-xs uppercase tracking-widest flex items-center gap-2">
+                    <Bot size={14} />
+                    <span>AI SENTINEL // OVERSIGHT & ENFORCEMENT COPILOT</span>
+                  </div>
+                  <h1 className="font-orbitron text-2xl md:text-3xl font-black uppercase text-white tracking-widest">
+                    AI TOXICITY AUDIT & ADMIN COPILOT
+                  </h1>
+                  <p className="text-xs text-gt-text-dim mt-1">
+                    Trung tâm thẩm định hành vi độc hại bằng AI & trợ lý tham vấn kỷ luật thời gian thực cho Quản trị viên.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0D121B] border border-gt-cyan/40 rounded-sm font-mono text-xs">
+                  <span className={`w-2 h-2 rounded-full ${aiStatus?.configured ? 'bg-gt-green animate-pulse' : 'bg-yellow-400'}`} />
+                  <span className="text-white font-bold">
+                    {aiStatus ? `${aiStatus.configured ? 'OPENAI ONLINE' : 'SIMULATION MODE'} · ${aiStatus.model}` : 'AI ENGINE ACTIVE'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Main 2-Column Grid */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                {/* Column 1: AI Toxicity Moderation */}
+                <div className="space-y-4">
+                  {/* Presets */}
+                  <div className="bg-[#0D121B] border border-gt-border p-4 rounded-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-orbitron text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <ScanSearch size={14} className="text-gt-orange" />
+                        CHỌN HỒ SƠ MẪU ĐỂ TEST (1-CLICK DEMO):
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAuditPreset('toxic_heavy')}
+                        className={`p-2.5 text-left border rounded-sm font-mono text-xs transition-all cursor-pointer ${
+                          auditPresetKey === 'toxic_heavy'
+                            ? 'border-gt-red bg-gt-red/20 text-gt-red font-bold'
+                            : 'border-gt-border bg-black/20 text-gt-text-dim hover:text-white'
+                        }`}
+                      >
+                        🔴 Ca 1: Toxic Nặng (BAN)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAuditPreset('toxic_mild')}
+                        className={`p-2.5 text-left border rounded-sm font-mono text-xs transition-all cursor-pointer ${
+                          auditPresetKey === 'toxic_mild'
+                            ? 'border-yellow-500 bg-yellow-500/20 text-yellow-400 font-bold'
+                            : 'border-gt-border bg-black/20 text-gt-text-dim hover:text-white'
+                        }`}
+                      >
+                        🟡 Ca 2: Cay Cú Nhẹ (Cảnh Cáo)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAuditPreset('innocent')}
+                        className={`p-2.5 text-left border rounded-sm font-mono text-xs transition-all cursor-pointer ${
+                          auditPresetKey === 'innocent'
+                            ? 'border-gt-green bg-gt-green/20 text-gt-green font-bold'
+                            : 'border-gt-border bg-black/20 text-gt-text-dim hover:text-white'
+                        }`}
+                      >
+                        🟢 Ca 3: Bị Oan (Bác Bỏ)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* JSON Input & Actions */}
+                  <div className="bg-[#0D121B] border border-gt-border p-4 rounded-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-mono text-xs text-gt-cyan uppercase font-bold flex items-center gap-1.5">
+                        <FileCode2 size={14} /> Dữ Liệu Hồ Sơ Người Chơi (JSON)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAuditPreset('toxic_heavy')}
+                        className="text-[11px] font-mono text-gt-text-dim hover:text-gt-cyan flex items-center gap-1 cursor-pointer"
+                      >
+                        <RotateCcw size={11} /> Reset JSON
+                      </button>
+                    </div>
+
+                    <textarea
+                      value={auditJson}
+                      onChange={(e) => setAuditJson(e.target.value)}
+                      rows={10}
+                      disabled={auditingPlayer}
+                      className="w-full bg-[#05070c] border border-gt-border focus:border-gt-cyan outline-none rounded-sm p-3 font-mono text-xs text-white leading-relaxed resize-y"
+                    />
+
+                    {auditError && (
+                      <div className="mt-2 p-2.5 bg-gt-red/10 border border-gt-red/40 text-gt-red text-xs rounded-sm">
+                        {auditError}
+                      </div>
+                    )}
+
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="font-mono text-[11px] text-gt-text-dim">
+                        Ngưỡng vi phạm toxic: <strong className="text-gt-orange">Toxicity ≥ 20/100</strong>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleExecuteAuditPlayer}
+                        disabled={auditingPlayer || !auditJson.trim()}
+                        className="px-4 py-2 bg-gt-orange hover:bg-orange-400 text-black font-orbitron font-bold uppercase text-xs tracking-wider rounded-sm transition-all shadow-[0_0_15px_rgba(255,107,0,0.3)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                      >
+                        {auditingPlayer ? <Loader2 size={15} className="animate-spin" /> : <ScanSearch size={15} />}
+                        {auditingPlayer ? 'AI Đang Thẩm Định...' : '⚡ AI Thẩm Định Hồ Sơ'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Assessment Result Card */}
+                  {auditAnalysis && (
+                    <div className="bg-[#0D121B] border border-gt-border p-4 rounded-sm space-y-3 animate-fadeIn">
+                      <div className="flex items-end justify-between pb-2 border-b border-gt-border/60">
+                        <div>
+                          <div className="font-mono text-[10px] text-gt-text-dim uppercase">Độ Độc Hại (Toxicity Score)</div>
+                          <div className="font-orbitron text-3xl font-black text-white flex items-baseline gap-2">
+                            <span
+                              className={
+                                auditAnalysis.toxicityScore >= 70
+                                  ? 'text-gt-red'
+                                  : auditAnalysis.toxicityScore >= 20
+                                  ? 'text-yellow-400'
+                                  : 'text-gt-green'
+                              }
+                            >
+                              {auditAnalysis.toxicityScore}
+                            </span>
+                            <span className="text-xs text-gt-text-dim">/ 100</span>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`px-2.5 py-1 text-xs font-mono font-bold rounded-sm border ${
+                            auditAnalysis.riskLevel === 'HIGH'
+                              ? 'bg-gt-red/20 border-gt-red text-gt-red'
+                              : auditAnalysis.riskLevel === 'MEDIUM'
+                              ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400'
+                              : 'bg-gt-green/20 border-gt-green text-gt-green'
+                          }`}
+                        >
+                          {auditAnalysis.riskLevel} RISK
+                        </span>
+                      </div>
+
+                      {/* Bar */}
+                      <div className="w-full bg-gt-border h-2 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 ${
+                            auditAnalysis.toxicityScore >= 70
+                              ? 'bg-gt-red shadow-[0_0_10px_rgba(255,0,85,0.7)]'
+                              : auditAnalysis.toxicityScore >= 20
+                              ? 'bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.7)]'
+                              : 'bg-gt-green shadow-[0_0_10px_rgba(0,255,163,0.7)]'
+                          }`}
+                          style={{ width: `${Math.min(100, Math.max(5, auditAnalysis.toxicityScore))}%` }}
+                        />
+                      </div>
+
+                      {/* Summary & Evidence */}
+                      <div className="text-xs text-gt-text space-y-1">
+                        <p><strong className="text-gt-cyan font-mono text-[11px] uppercase">Đánh giá:</strong> {auditAnalysis.summary}</p>
+                        {auditAnalysis.evidence.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gt-border/40">
+                            <div className="text-gt-orange font-mono text-[10px] uppercase font-bold mb-1">Bằng chứng trích xuất:</div>
+                            <ul className="list-disc pl-4 space-y-1 font-mono text-[11px] text-white">
+                              {auditAnalysis.evidence.map((ev, i) => (
+                                <li key={i}>{ev}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Recommendation & Admin Decision Buttons */}
+                      <div className="pt-3 border-t border-gt-border/60">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-gt-text-dim">Đề xuất AI: <strong className="text-gt-yellow font-orbitron">{auditAnalysis.recommendation}</strong></span>
+                          <span className="font-mono text-[10px] text-gt-green">👑 HUMAN DECISION</span>
+                        </div>
+
+                        {auditDecision ? (
+                          <div className="p-2.5 bg-gt-green/15 border border-gt-green text-gt-green font-mono text-xs rounded-sm flex items-center justify-between">
+                            <span>{auditDecision}</span>
+                            <button type="button" onClick={() => setAuditDecision(null)} className="underline text-[10px] text-gt-text-dim hover:text-white">
+                              Đổi
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setAuditDecision('✅ Đã bác bỏ: Báo cáo không đủ căn cứ vi phạm.')}
+                              className="p-2 bg-gt-green/15 hover:bg-gt-green/25 text-gt-green border border-gt-green/50 text-xs font-bold rounded-sm transition-all cursor-pointer"
+                            >
+                              Bác Bỏ
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAuditDecision('⚠️ Đã gửi cảnh cáo & trừ 20 điểm Uy Tín (Reputation).')}
+                              className="p-2 bg-yellow-500/15 hover:bg-yellow-500/25 text-yellow-400 border border-yellow-500/50 text-xs font-bold rounded-sm transition-all cursor-pointer"
+                            >
+                              Cảnh Cáo (-20 Rep)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAuditDecision('🔨 Đã đình chỉ tài khoản theo đề xuất vi phạm.')}
+                              className="p-2 bg-gt-red/20 hover:bg-gt-red/30 text-gt-red border border-gt-red/50 text-xs font-bold rounded-sm transition-all cursor-pointer"
+                            >
+                              Ban Tài Khoản
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="mt-2 text-right">
+                          <button
+                            type="button"
+                            onClick={handleDiscussAuditInChat}
+                            className="text-xs text-gt-cyan hover:underline font-mono inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            Thảo luận thêm với AI Copilot <ArrowRight size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Column 2: Admin AI Copilot & Chatbox */}
+                <div className="bg-[#0D121B] border border-gt-border p-4 rounded-sm flex flex-col h-[700px]">
+                  <header className="pb-3 border-b border-gt-border flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-gt-cyan/20 border border-gt-cyan flex items-center justify-center text-gt-cyan rounded-xs">
+                        <Bot size={16} />
+                      </div>
+                      <div>
+                        <div className="font-orbitron text-xs font-bold text-white uppercase tracking-wider">ADMIN AI COPILOT</div>
+                        <div className="font-mono text-[9px] text-gt-green uppercase">Realtime Legal & Sanction Advisor</div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setAdminAiMessages([{ role: 'assistant', content: 'Xin chào Admin! Mình sẵn sàng hỗ trợ bạn.' }])}
+                      className="text-gt-text-dim hover:text-gt-red p-1 text-xs cursor-pointer"
+                      title="Xóa lịch sử chat"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </header>
+
+                  {/* Messages Scroll Area */}
+                  <div className="flex-1 overflow-y-auto py-3 space-y-3 font-mono text-xs">
+                    {adminAiMessages.map((msg, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {msg.role === 'assistant' && (
+                          <div className="w-6 h-6 shrink-0 bg-gt-cyan/15 border border-gt-cyan/50 text-gt-cyan flex items-center justify-center rounded-xs mt-0.5">
+                            <Bot size={13} />
+                          </div>
+                        )}
+                        <div
+                          className={`max-w-[85%] px-3 py-2 rounded-xs whitespace-pre-wrap leading-relaxed ${
+                            msg.role === 'user'
+                              ? 'bg-gt-cyan text-black font-semibold'
+                              : 'bg-black/50 border border-gt-border text-white'
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                      </div>
+                    ))}
+
+                    {adminAiSending && (
+                      <div className="flex items-center gap-2 text-gt-text-dim font-mono text-[11px]">
+                        <Loader2 size={13} className="animate-spin text-gt-cyan" />
+                        <span>AI Copilot đang tham vấn điều khoản...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Chat Input */}
+                  <div className="pt-3 border-t border-gt-border">
+                    {adminAiError && (
+                      <div className="mb-2 p-2 bg-gt-red/10 border border-gt-red/40 text-gt-red text-[11px] rounded-sm">
+                        {adminAiError}
+                      </div>
+                    )}
+                    <form onSubmit={handleSendAdminAi} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={adminAiInput}
+                        onChange={(e) => setAdminAiInput(e.target.value)}
+                        placeholder="Hỏi AI về điều khoản xử phạt, quy trình kỷ luật..."
+                        disabled={adminAiSending}
+                        className="flex-1 bg-[#05070c] border border-gt-border focus:border-gt-cyan outline-none rounded-sm px-3 py-2 text-xs text-white placeholder:text-gt-text-dim font-mono"
+                      />
+                      <button
+                        type="submit"
+                        disabled={adminAiSending || !adminAiInput.trim()}
+                        className="px-4 bg-gt-cyan text-black font-bold uppercase text-xs rounded-sm hover:shadow-[0_0_12px_rgba(0,240,255,0.4)] disabled:opacity-40 cursor-pointer flex items-center justify-center"
+                      >
+                        {adminAiSending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                      </button>
+                    </form>
+                  </div>
+                </div>
               </div>
             </div>
           )}
