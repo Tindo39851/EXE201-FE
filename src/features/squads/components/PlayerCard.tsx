@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { getApiErrorMessage } from '@/services/api-client';
-import { Mic, Check } from 'lucide-react';
+import { Mic, Check, Crown } from 'lucide-react';
 import type { PlayerProfile } from '../types/squad.types';
 
 const colorStyles = {
@@ -101,14 +101,19 @@ export const PlayerCard: React.FC<PlayerCardComponentProps> = ({ player, onInvit
       {/* Header Row */}
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 flex items-center justify-center font-orbitron font-extrabold text-base bg-[#080D15] border ${currentStyle.border} ${currentStyle.text} cyber-cut-sm shadow-[0_0_12px_rgba(0,0,0,0.5)] group-hover:scale-105 transition-transform`}>
+          <div className={`w-11 h-11 flex items-center justify-center font-orbitron font-extrabold text-base bg-[#080D15] border ${player.isPremium ? 'border-yellow-400 text-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]' : `${currentStyle.border} ${currentStyle.text}`} cyber-cut-sm shadow-[0_0_12px_rgba(0,0,0,0.5)] group-hover:scale-105 transition-transform`}>
             {player.initial}
           </div>
 
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-orbitron font-bold text-base text-white uppercase tracking-wider group-hover:text-gt-cyan transition-colors">
-                {player.username}
+              <h3 className="font-orbitron font-bold text-base text-white uppercase tracking-wider group-hover:text-gt-cyan transition-colors flex items-center gap-1.5">
+                <span>{player.username}</span>
+                {player.isPremium && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-yellow-400/20 border border-yellow-400/60 text-yellow-400 font-mono text-[9px] font-black flex items-center gap-0.5" title="Hội viên GameTrust Premium">
+                    <Crown size={10} /> VIP
+                  </span>
+                )}
               </h3>
               <span className="font-mono text-[11px] text-gt-text-dim">[{player.timezone}]</span>
             </div>

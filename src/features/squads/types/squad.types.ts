@@ -16,6 +16,7 @@ export interface PlayerProfile {
   winRate: string;
   accentColor: AccentColor;
   micAvailable: boolean;
+  isPremium?: boolean;
 }
 
 export interface SquadFilterDto {
@@ -37,10 +38,12 @@ export interface MatchmakingRequestDto {
 
 export interface MatchmakingResult {
   lobbyId: string;
+  roomId?: string;
+  roomName?: string;
   game: string;
-  channel: string;
-  matchedCount: number;
-  maxPlayers: number;
+  channel?: string;
+  matchedCount?: number;
+  maxPlayers?: number;
   voiceChannelUrl: string;
   status: 'QUEUED' | 'MATCHED' | 'FAILED';
 }
@@ -48,6 +51,19 @@ export interface MatchmakingResult {
 export interface SquadInvite {
   id: string;
   invitedBy?: string;
+  recipientUsername?: string;
   playerId?: string;
+  roomId?: string;
   status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  createdAt?: string;
+}
+
+export interface UpdateSquadProfileDto {
+  game: string;
+  rank: string;
+  roles: string[];
+  region?: string;
+  micAvailable: boolean;
+  bio?: string;
+  lookingForSquad?: boolean;
 }

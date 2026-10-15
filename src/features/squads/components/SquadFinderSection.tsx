@@ -1,10 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PlayerCard } from './PlayerCard';
+import { AiSquadRecommendations } from './AiSquadRecommendations';
+import { MySquadProfileModal } from './MySquadProfileModal';
 import { useSquads } from '../hooks/useSquads';
-import { Gamepad2, ArrowRight } from 'lucide-react';
+import { squadService } from '../services/squad.service';
+import { Gamepad2, ArrowRight, UserCheck, Zap, Loader2 } from 'lucide-react';
 
 const GAMES = [
   'ALL',
@@ -15,12 +19,49 @@ const GAMES = [
 ];
 
 export const SquadFinderSection: React.FC = () => {
-  const { players, activeGame, selectGame, invitePlayer, isLoading } = useSquads('ALL');
+  const router = useRouter();
+  const { players, activeGame, selectGame, invitePlayer, isLoading, refetch } = useSquads('ALL');
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [matchmaking, setMatchmaking] = useState(false);
+
+  const handleQuickMatch = async () => {
+    setMatchmaking(true);
+    try {
+      const res = await squadService.findSquad({
+        gameId: activeGame === 'ALL' ? 'valorant' : activeGame.toLowerCase(),
+        primaryRole: 'Flex',
+        rank: 'All',
+        region: 'VN',
+        neededRoles: ['Flex'],
+        micRequired: true,
+      });
+
+      const targetRoomId = res.roomId || res.lobbyId;
+      if (targetRoomId) {
+        router.push(`/voice-lounges?joinRoom=${encodeURIComponent(targetRoomId)}`);
+      } else {
+        router.push('/voice-lounges');
+      }
+    } catch {
+      router.push('/voice-lounges');
+    } finally {
+      setMatchmaking(false);
+    }
+  };
 
   return (
     <div className="w-full">
+      <MySquadProfileModal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        onProfileSaved={() => refetch()}
+      />
+
       <div className="max-w-7xl mx-auto flex flex-col gap-8">
         
+        {/* AI Smart Squad Recommendation (Premium Feature) */}
+        <AiSquadRecommendations activeGame={activeGame === 'ALL' ? 'Valorant' : activeGame} />
+
         {/* Header section */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-gt-border/60">
           <div className="flex flex-col gap-1.5">
@@ -37,13 +78,33 @@ export const SquadFinderSection: React.FC = () => {
             </div>
           </div>
 
-          <Link
-            href="/squad-finder"
-            className="group font-mono text-xs text-gt-cyan hover:text-white transition-colors duration-200 uppercase tracking-widest flex items-center gap-1.5 w-fit"
-          >
-            <span>DISCORD MODE</span>
-            <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setProfileModalOpen(true)}
+              className="px-4 py-2 bg-gt-cyan/10 hover:bg-gt-cyan/20 border border-gt-cyan/40 text-gt-cyan font-mono text-xs font-bold uppercase tracking-wider rounded-sm cyber-cut-sm transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-[0_0_12px_rgba(0,240,255,0.2)]"
+            >
+              <UserCheck size={14} />
+              <span>HỒ SƠ CỦA TÔI</span>
+            </button>
+
+            <button
+              onClick={handleQuickMatch}
+              disabled={matchmaking}
+              className="px-4 py-2 bg-gradient-to-r from-gt-cyan to-blue-600 hover:from-gt-cyan/90 hover:to-blue-500 text-black font-orbitron font-extrabold text-xs uppercase tracking-wider rounded-sm cyber-cut-sm transition-all duration-200 flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(0,240,255,0.4)] disabled:opacity-50"
+            >
+              {matchmaking ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>ĐANG GHÉP...</span>
+                </>
+              ) : (
+                <>
+                  <Zap size={14} />
+                  <span>GHÉP ĐỘI NHANH</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
         
         {/* Game Filters */}

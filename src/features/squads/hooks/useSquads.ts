@@ -34,9 +34,9 @@ export function useSquads(initialGame: string = 'ALL') {
     setActiveGame(game);
   };
 
-  const invitePlayer = async (playerId: string) => {
+  const invitePlayer = async (playerId: string, roomId?: string) => {
     try {
-      return await squadService.invitePlayer(playerId);
+      return await squadService.invitePlayer(playerId, roomId);
     } catch (err) {
       throw err;
     }

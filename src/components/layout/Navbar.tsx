@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Sparkles, LogOut, Wallet } from 'lucide-react';
+import { Bell, Sparkles, LogOut, Wallet, Crown } from 'lucide-react';
 import { AuthModal } from '@/components/ui/AuthModal';
 import { InboxModal } from '@/components/ui/InboxModal';
+import { PremiumModal } from '@/components/ui/PremiumModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { walletService } from '@/features/wallet/services/wallet.service';
 
@@ -14,6 +15,7 @@ export default function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [inboxOpen, setInboxOpen] = useState(false);
+  const [premiumOpen, setPremiumOpen] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const { user, logout } = useAuth();
 
@@ -56,6 +58,11 @@ export default function Navbar() {
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
         defaultMode={authMode}
+      />
+
+      <PremiumModal
+        isOpen={premiumOpen}
+        onClose={() => setPremiumOpen(false)}
       />
 
       <nav className="fixed top-0 left-0 w-full z-50 bg-gt-bg/85 backdrop-blur-xl border-b border-gt-border/80 transition-all duration-300">
@@ -163,6 +170,25 @@ export default function Navbar() {
                       : '...'}
                   </span>
                 </Link>
+
+                {user.isPremium ? (
+                  <div
+                    title={`Hội viên GameTrust Premium (Hạn dùng: ${user.premiumExpiresAt ? new Date(user.premiumExpiresAt).toLocaleDateString('vi-VN') : '30 ngày'})`}
+                    className="flex items-center gap-1 px-2.5 py-1 bg-yellow-400/15 border border-yellow-400/80 text-yellow-300 rounded-sm cyber-cut-sm shadow-[0_0_12px_rgba(250,204,21,0.4)] font-orbitron text-xs font-black cursor-default select-none"
+                  >
+                    <Crown size={13} className="text-yellow-400" />
+                    <span>PREMIUM</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setPremiumOpen(true)}
+                    title="Nâng cấp tài khoản GameTrust Premium (49.000 đ/tháng)"
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-yellow-500/20 to-amber-400/20 hover:from-yellow-500 hover:to-amber-400 text-yellow-400 hover:text-black border border-yellow-400/80 rounded-sm cyber-cut-sm shadow-[0_0_12px_rgba(250,204,21,0.25)] hover:shadow-[0_0_20px_rgba(250,204,21,0.6)] transition-all cursor-pointer font-orbitron text-xs font-extrabold"
+                  >
+                    <Crown size={13} />
+                    <span className="hidden sm:inline">NÂNG CẤP VIP</span>
+                  </button>
+                )}
 
                 {user.role === 'ADMIN' && (
                   <Link

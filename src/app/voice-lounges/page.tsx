@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { VoiceLoungesSection } from '@/features/voice-lounges';
@@ -11,7 +11,13 @@ export default function VoiceLoungesPage() {
       <Navbar />
 
       <main className="pt-20 pb-16 flex-1 w-full">
-        <VoiceLoungesSection />
+        <Suspense fallback={
+          <div className="max-w-7xl mx-auto px-4 py-20 text-center font-mono text-sm text-gt-cyan">
+            CONNECTING TO LIVEKIT VOICE SECTOR...
+          </div>
+        }>
+          <VoiceLoungesSection />
+        </Suspense>
       </main>
 
       <Footer />

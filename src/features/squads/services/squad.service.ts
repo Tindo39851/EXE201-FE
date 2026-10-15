@@ -1,5 +1,5 @@
 import { apiClient, getApiErrorMessage, getApiErrorStatus } from '@/services/api-client';
-import type { PlayerProfile, SquadFilterDto, MatchmakingRequestDto, MatchmakingResult, SquadInvite } from '../types/squad.types';
+import type { PlayerProfile, SquadFilterDto, MatchmakingRequestDto, MatchmakingResult, SquadInvite, UpdateSquadProfileDto } from '../types/squad.types';
 
 const MOCK_PLAYERS: PlayerProfile[] = [
   {
@@ -135,17 +135,37 @@ export const squadService = {
   },
 
   /**
-   * Invite a player to a lobby
+   * Get current user's squad profile
    */
-  async invitePlayer(playerId: string): Promise<{ success: boolean; message: string }> {
+  async getMyProfile(): Promise<PlayerProfile> {
+    const response = await apiClient.get<PlayerProfile>('/squads/me/profile');
+    return response.data;
+  },
+
+  /**
+   * Create or update current user's squad profile
+   */
+  async updateMyProfile(dto: UpdateSquadProfileDto): Promise<PlayerProfile> {
+    const response = await apiClient.put<PlayerProfile>('/squads/me/profile', dto);
+    return response.data;
+  },
+
+  /**
+   * Invite a player to a lobby or room
+   */
+  async invitePlayer(playerId: string, roomId?: string): Promise<{ success: boolean; message: string; roomId?: string }> {
     try {
-      const response = await apiClient.post<{ success: boolean; message: string }>(`/squads/invite/${playerId}`);
+      const response = await apiClient.post<{ success: boolean; message: string; roomId?: string }>(
+        `/squads/invite/${playerId}`,
+        null,
+        { params: roomId ? { roomId } : undefined }
+      );
       return response.data;
     } catch (err: unknown) {
       if (getApiErrorStatus(err) === 401) {
-        throw new Error('Please log in to invite players');
+        throw new Error('Vui lòng đăng nhập để gửi lời mời');
       }
-      return { success: true, message: `Invite dispatched to ${playerId}` };
+      return { success: false, message: getApiErrorMessage(err, 'Không thể gửi lời mời') };
     }
   },
 
@@ -158,9 +178,9 @@ export const squadService = {
     }
   },
 
-  async respondToInvite(inviteId: string, accept: boolean): Promise<{ success: boolean; message: string }> {
+  async respondToInvite(inviteId: string, accept: boolean): Promise<{ success: boolean; message: string; roomId?: string; status?: string }> {
     try {
-      const response = await apiClient.post<{ success: boolean; message: string }>(
+      const response = await apiClient.post<{ success: boolean; message: string; roomId?: string; status?: string }>(
         `/squads/invites/${inviteId}/respond`,
         null,
         { params: { accept } }
