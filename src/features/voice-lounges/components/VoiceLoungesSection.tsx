@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { GameFilterTabs } from './GameFilterTabs';
 import { RoomCard } from './RoomCard';
 import { CreateRoomModal } from './CreateRoomModal';
@@ -9,7 +10,11 @@ import { useVoiceRooms } from '../hooks/useVoiceRooms';
 import type { VoiceRoom } from '../types/voice.types';
 
 export const VoiceLoungesSection: React.FC = () => {
+  const searchParams = useSearchParams();
+  const joinRoomParam = searchParams.get('joinRoom') || searchParams.get('roomId');
+
   const [activeJoinedRoom, setActiveJoinedRoom] = useState<VoiceRoom | null>(null);
+  const [hasAutoJoined, setHasAutoJoined] = useState(false);
 
   const {
     games,
@@ -25,6 +30,21 @@ export const VoiceLoungesSection: React.FC = () => {
     setIsCreateModalOpen,
     handleCreateRoom,
   } = useVoiceRooms();
+
+  // Automatically join target room if coming from AI Recommendation or Squad Finder with ?joinRoom=...
+  useEffect(() => {
+    if (joinRoomParam && !hasAutoJoined && rooms.length > 0) {
+      const match = rooms.find(
+        r => r.id.toLowerCase() === joinRoomParam.toLowerCase() ||
+             r.name.toLowerCase().includes(joinRoomParam.toLowerCase())
+      ) || rooms[0];
+
+      if (match) {
+        setActiveJoinedRoom(match);
+        setHasAutoJoined(true);
+      }
+    }
+  }, [joinRoomParam, hasAutoJoined, rooms]);
 
   // If user is currently in a room, render the inside room view (Screenshot 2)
   if (activeJoinedRoom) {

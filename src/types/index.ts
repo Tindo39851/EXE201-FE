@@ -11,6 +11,9 @@ export interface AuthUser {
   reputationScore: number;
   avatarUrl?: string;
   walletBalance?: number;
+  isPremium?: boolean;
+  premiumTier?: string;
+  premiumExpiresAt?: string;
 }
 
 export interface ApiResponse<T> {

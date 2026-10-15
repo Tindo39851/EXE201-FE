@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, Bell, Users, Check, Ban, Radio } from 'lucide-react';
 import { squadService } from '@/features/squads/services/squad.service';
 import type { SquadInvite } from '@/features/squads/types/squad.types';
@@ -11,6 +12,7 @@ interface InboxModalProps {
 }
 
 export const InboxModal: React.FC<InboxModalProps> = ({ isOpen, onClose }) => {
+  const router = useRouter();
   const [invites, setInvites] = useState<SquadInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
@@ -36,12 +38,16 @@ export const InboxModal: React.FC<InboxModalProps> = ({ isOpen, onClose }) => {
   const handleRespond = async (id: string, accept: boolean) => {
     setActingId(id);
     try {
-      await squadService.respondToInvite(id, accept);
+      const res = await squadService.respondToInvite(id, accept);
       setInvites(prev =>
         prev.map(inv =>
           inv.id === id ? { ...inv, status: accept ? 'ACCEPTED' : 'DECLINED' } : inv
         )
       );
+      if (accept && res.roomId) {
+        onClose();
+        router.push(`/voice-lounges?joinRoom=${encodeURIComponent(res.roomId)}`);
+      }
     } finally {
       setActingId(null);
     }

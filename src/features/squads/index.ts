@@ -10,3 +10,4 @@ export * from './hooks/useSquadMatchmaking';
 export { PlayerCard } from './components/PlayerCard';
 export { SquadFinderSection } from './components/SquadFinderSection';
 export { DiscordLobby } from './components/DiscordLobby';
+export { AiSquadRecommendations } from './components/AiSquadRecommendations';
