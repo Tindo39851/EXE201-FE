@@ -1,4 +1,4 @@
-import { apiClient, getApiErrorStatus } from '@/services/api-client';
+import { apiClient, getApiErrorMessage, getApiErrorStatus } from '@/services/api-client';
 import type { SocialPost, OnlinePlayer, TrendingTag, CreatePostDto } from '../types/social.types';
 
 const MOCK_POSTS: SocialPost[] = [
@@ -106,22 +106,7 @@ export const socialService = {
       if (getApiErrorStatus(err) === 401) {
         throw new Error('Please sign in to publish a post');
       }
-      return {
-        id: Date.now(),
-        username: 'YOU',
-        initial: 'U',
-        avatarColor: 'bg-gt-cyan text-black border-gt-cyan',
-        timezone: 'NOW',
-        tag: dto.tag || 'LFG BROADCAST',
-        tagColor: 'text-gt-cyan border-gt-cyan/50 bg-gt-cyan/10',
-        game: dto.game || 'Active',
-        time: 'Just now',
-        content: dto.content,
-        likes: 1,
-        liked: true,
-        comments: 0,
-        bottomGradient: 'from-gt-cyan to-gt-magenta',
-      };
+      throw new Error(getApiErrorMessage(err, 'Failed to publish post'));
     }
   },
 
@@ -129,8 +114,8 @@ export const socialService = {
     try {
       const response = await apiClient.post<{ liked: boolean; count: number }>(`/social/posts/${postId}/like`);
       return response.data;
-    } catch {
-      return { liked: true, count: 1 };
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to update post reaction'));
     }
   },
 

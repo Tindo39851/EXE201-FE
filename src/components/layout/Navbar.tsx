@@ -20,15 +20,13 @@ export default function Navbar() {
   const { user, logout } = useAuth();
 
   useEffect(() => {
-    if (!user) {
-      setWalletBalance(null);
-      return;
-    }
+    if (!user) return;
     walletService.getBalance().then((bal) => setWalletBalance(bal));
 
-    const handleBalanceUpdate = (e: any) => {
-      if (typeof e.detail === 'number') {
-        setWalletBalance(e.detail);
+    const handleBalanceUpdate = (event: Event) => {
+      const balance = (event as CustomEvent<unknown>).detail;
+      if (typeof balance === 'number') {
+        setWalletBalance(balance);
       } else {
         walletService.getBalance().then((bal) => setWalletBalance(bal));
       }
@@ -36,6 +34,8 @@ export default function Navbar() {
     window.addEventListener('wallet:balance-updated', handleBalanceUpdate);
     return () => window.removeEventListener('wallet:balance-updated', handleBalanceUpdate);
   }, [user]);
+
+  const visibleWalletBalance = user ? walletBalance : null;
 
   const navLinks = [
     { name: 'Squad Finder', href: '/squad-finder' },
@@ -92,14 +92,14 @@ export default function Navbar() {
           </Link>
 
           {/* Center: Navigation Links */}
-          <div className="hidden md:flex items-center gap-1 lg:gap-2">
+          <div className="hidden md:flex items-center gap-0.5 2xl:gap-2">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative px-4 py-2 font-mono text-xs uppercase tracking-widest font-semibold transition-all duration-300 group ${
+                  className={`relative px-2 2xl:px-4 py-2 font-mono text-[10px] 2xl:text-xs uppercase tracking-wide 2xl:tracking-widest font-semibold transition-all duration-300 group ${
                     isActive
                       ? 'text-gt-cyan text-glow-cyan'
                       : 'text-gt-text-dim hover:text-white'
@@ -120,8 +120,8 @@ export default function Navbar() {
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 bg-gt-bg-card border border-gt-border rounded-sm font-mono text-[11px] text-gt-cyan">
+          <div className="flex items-center gap-1 sm:gap-4 shrink-0">
+            <div className="hidden 2xl:flex items-center gap-2 px-2.5 py-1 bg-gt-bg-card border border-gt-border rounded-sm font-mono text-[11px] text-gt-cyan">
               <span className="w-2 h-2 rounded-full bg-gt-green animate-pulse"></span>
               <span className="tracking-wider">62.1K LIVE</span>
             </div>
@@ -130,23 +130,23 @@ export default function Navbar() {
               aria-label="Notifications & Invites"
               title="Squad Invites & Alerts"
               onClick={() => setInboxOpen(true)}
-              className="relative p-2 text-gt-text-dim hover:text-gt-cyan hover:bg-gt-cyan/10 border border-transparent hover:border-gt-cyan/30 rounded-sm transition-all duration-300 cursor-pointer"
+              className="relative hidden sm:inline-flex p-2 text-gt-text-dim hover:text-gt-cyan hover:bg-gt-cyan/10 border border-transparent hover:border-gt-cyan/30 rounded-sm transition-all duration-300 cursor-pointer"
             >
               <Bell size={18} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gt-cyan rounded-full shadow-[0_0_8px_#00F0FF] animate-pulse"></span>
             </button>
 
             {user ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 sm:gap-3">
                 <Link
                   href="/profile"
                   title="View Operative Profile"
-                  className="flex items-center gap-2 px-3 py-1 bg-gt-bg-card border border-gt-cyan/50 hover:border-gt-cyan rounded-sm cyber-cut-sm shadow-[0_0_10px_rgba(0,240,255,0.2)] hover:shadow-[0_0_15px_rgba(0,240,255,0.4)] transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-1.5 sm:px-3 py-1 bg-gt-bg-card border border-gt-cyan/50 hover:border-gt-cyan rounded-sm cyber-cut-sm shadow-[0_0_10px_rgba(0,240,255,0.2)] hover:shadow-[0_0_15px_rgba(0,240,255,0.4)] transition-all cursor-pointer"
                 >
                   <div className="w-6 h-6 rounded-sm bg-gt-cyan/20 border border-gt-cyan flex items-center justify-center font-orbitron font-bold text-xs text-gt-cyan">
                     {user.username?.charAt(0).toUpperCase()}
                   </div>
-                  <div className="flex flex-col">
+                  <div className="hidden sm:flex flex-col">
                     <span className="font-orbitron font-bold text-xs text-white uppercase tracking-wider">
                       {user.username}
                     </span>
@@ -158,13 +158,13 @@ export default function Navbar() {
 
                 <Link
                   href="/wallet"
-                  title={`Ví GameTrust: ${walletBalance !== null ? walletBalance.toLocaleString('vi-VN') : '...'} VNĐ`}
+                  title={`Ví GameTrust: ${visibleWalletBalance !== null ? visibleWalletBalance.toLocaleString('vi-VN') : '...'} VNĐ`}
                   className="flex items-center gap-1.5 px-2.5 py-1 bg-gt-bg-card border border-yellow-500/40 hover:border-yellow-400 text-yellow-400 rounded-sm cyber-cut-sm shadow-[0_0_10px_rgba(234,179,8,0.2)] hover:shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all cursor-pointer font-orbitron text-xs font-bold"
                 >
                   <Wallet size={14} className="text-yellow-400" />
                   <span className="hidden sm:inline">
-                    {walletBalance !== null
-                      ? `${walletBalance >= 1000 ? Math.round(walletBalance / 1000) : walletBalance}K đ`
+                    {visibleWalletBalance !== null
+                      ? `${visibleWalletBalance >= 1000 ? Math.round(visibleWalletBalance / 1000) : visibleWalletBalance}K đ`
                       : user.walletBalance !== undefined
                       ? `${Math.round(user.walletBalance / 1000)}K đ`
                       : '...'}
@@ -194,10 +194,10 @@ export default function Navbar() {
                   <Link
                     href="/admin"
                     title="Open Supreme Admin Console"
-                    className="flex items-center gap-1.5 px-3 py-1 bg-gt-yellow/20 hover:bg-gt-yellow text-gt-yellow hover:text-black border border-gt-yellow font-orbitron text-[11px] font-bold uppercase rounded-sm cyber-cut-sm shadow-[0_0_10px_rgba(255,215,0,0.3)] hover:shadow-[0_0_15px_rgba(255,215,0,0.6)] transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-2 sm:px-3 py-1 bg-gt-yellow/20 hover:bg-gt-yellow text-gt-yellow hover:text-black border border-gt-yellow font-orbitron text-[11px] font-bold uppercase rounded-sm cyber-cut-sm shadow-[0_0_10px_rgba(255,215,0,0.3)] hover:shadow-[0_0_15px_rgba(255,215,0,0.6)] transition-all cursor-pointer"
                   >
                     <span>⚡</span>
-                    <span>ADMIN PANEL</span>
+                    <span className="hidden xl:inline">ADMIN PANEL</span>
                   </Link>
                 )}
 

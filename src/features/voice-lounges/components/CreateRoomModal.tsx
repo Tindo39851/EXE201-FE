@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { X, Mic, Users, Shield } from 'lucide-react';
-import type { CreateRoomDto, RoomTag, RoomVisibility, VoiceRoom } from '../types/voice.types';
+import type { CreateRoomDto, RoomVisibility, VoiceRoom } from '../types/voice.types';
+import { getApiErrorMessage } from '@/services/api-client';
 
 interface CreateRoomModalProps {
   isOpen: boolean;
@@ -56,6 +57,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const [capacity, setCapacity] = useState(5);
   const [visibility, setVisibility] = useState<RoomVisibility>('Public');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -74,6 +76,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     if (!name.trim()) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       await onSubmit({
         name: name.trim(),
@@ -85,6 +88,8 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         visibility,
       });
       onClose();
+    } catch (error: unknown) {
+      setSubmitError(getApiErrorMessage(error, 'Không thể tạo voice room. Vui lòng thử lại.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -242,6 +247,12 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           </div>
 
           {/* Actions */}
+          {submitError && (
+            <div role="alert" className="p-3 border border-rose-500/50 bg-rose-500/10 text-rose-300 text-xs font-mono rounded-lg">
+              {submitError}
+            </div>
+          )}
+
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-800">
             <button
               type="button"

@@ -46,7 +46,8 @@ export const MySquadProfileModal: React.FC<MySquadProfileModalProps> = ({
   const [lookingForSquad, setLookingForSquad] = useState(true);
 
   useEffect(() => {
-    if (isOpen && user) {
+    if (!isOpen || !user) return;
+    const timeout = window.setTimeout(() => {
       setLoading(true);
       setErrorMsg(null);
       setSuccessMsg(null);
@@ -66,7 +67,8 @@ export const MySquadProfileModal: React.FC<MySquadProfileModalProps> = ({
           // Default values are already set
         })
         .finally(() => setLoading(false));
-    }
+    }, 0);
+    return () => window.clearTimeout(timeout);
   }, [isOpen, user]);
 
   if (!isOpen) return null;

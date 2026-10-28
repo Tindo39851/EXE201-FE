@@ -43,15 +43,17 @@ export default function AiChatPage() {
   const messagePanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!user) {
-      setStatus(null);
-      return;
-    }
-    aiChatService
-      .getStatus()
-      .then(setStatus)
-      .catch(() => setStatus(null));
+    if (!user) return;
+    const timeout = window.setTimeout(() => {
+      void aiChatService
+        .getStatus()
+        .then(setStatus)
+        .catch(() => setStatus(null));
+    }, 0);
+    return () => window.clearTimeout(timeout);
   }, [user]);
+
+  const visibleStatus = user ? status : null;
 
   useEffect(() => {
     const panel = messagePanelRef.current;
@@ -116,13 +118,13 @@ export default function AiChatPage() {
               <div className="flex items-center gap-2 px-3 py-2 border border-gt-border bg-gt-bg-card rounded-sm font-mono text-xs shadow-sm">
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    status?.configured ? 'bg-gt-green animate-pulse' : 'bg-yellow-400'
+                    visibleStatus?.configured ? 'bg-gt-green animate-pulse' : 'bg-yellow-400'
                   }`}
                 />
                 <span className="text-gt-text-dim">
-                  {status
-                    ? `${status.configured ? 'OPENAI ONLINE' : 'AI READY'} · ${status.model}`
-                    : 'AI ENGINE READY'}
+                  {visibleStatus
+                    ? `${visibleStatus.configured ? 'OPENAI ONLINE' : 'KEY REQUIRED'} · ${visibleStatus.model}`
+                    : 'AI STATUS'}
                 </span>
               </div>
             </div>
@@ -207,7 +209,7 @@ export default function AiChatPage() {
 
                   <div className="border-t border-gt-border p-4 bg-black/20">
                     {chatError && (
-                      <div className="mb-3 px-3 py-2 border border-gt-red/40 bg-gt-red/10 text-gt-red text-xs rounded-sm">
+                      <div role="alert" className="mb-3 px-3 py-2 border border-gt-red/40 bg-gt-red/10 text-gt-red text-xs rounded-sm">
                         {chatError}
                       </div>
                     )}

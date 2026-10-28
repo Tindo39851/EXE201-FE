@@ -46,7 +46,7 @@ const participantToMember = (participant: Participant, ownerId?: string): VoiceM
 });
 
 const ConnectedRoom: React.FC<ConnectedRoomProps> = ({ initialRoom, mediaError }) => {
-  const { room: restRoom, messages, sendMessage } = useVoiceRoom(initialRoom.id);
+  const { room: restRoom, messages, sendMessage, error: roomSyncError } = useVoiceRoom(initialRoom.id);
   const participants = useParticipants();
   const liveKitRoom = useRoomContext();
   const connectionState = useConnectionState();
@@ -143,7 +143,7 @@ const ConnectedRoom: React.FC<ConnectedRoomProps> = ({ initialRoom, mediaError }
         isMuted={!isMicrophoneEnabled}
         isDeafened={isDeafened}
         connectionState={connectionState}
-        controlError={controlError || mediaError}
+        controlError={controlError || mediaError || roomSyncError}
         onToggleMute={() => void toggleMute()}
         onToggleDeafen={() => setIsDeafened(value => !value)}
         onLeaveRoom={() => void leaveRoom()}

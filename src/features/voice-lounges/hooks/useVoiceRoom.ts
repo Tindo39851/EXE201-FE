@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { getApiErrorMessage } from '@/services/api-client';
 import { voiceService } from '../services/voice.service';
 import type { VoiceRoom, ChatMessage } from '../types/voice.types';
 
@@ -17,21 +18,33 @@ export function useVoiceRoom(roomId: string | null) {
   const [room, setRoom] = useState<VoiceRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const roomGameId = room?.gameId;
 
   // Load room details & sync presence
   const loadRoom = useCallback(async () => {
     if (!roomId) return;
-    const data = await voiceService.getRoomDetails(roomId);
-    if (data) setRoom(data);
-    setLoading(false);
+    try {
+      const data = await voiceService.getRoomDetails(roomId);
+      if (data) setRoom(data);
+      setError(null);
+    } catch (reason) {
+      setError(getApiErrorMessage(reason, 'Không thể đồng bộ voice room.'));
+    } finally {
+      setLoading(false);
+    }
   }, [roomId]);
 
   // Load chat messages
   const loadMessages = useCallback(async () => {
     if (!roomId) return;
-    const msgs = await voiceService.getMessages(roomId, room?.gameId);
-    setMessages(current => sameMessages(current, msgs) ? current : msgs);
-  }, [roomId, room?.gameId]);
+    try {
+      const msgs = await voiceService.getMessages(roomId, roomGameId);
+      setMessages(current => sameMessages(current, msgs) ? current : msgs);
+    } catch (reason) {
+      setError(getApiErrorMessage(reason, 'Không thể đồng bộ tin nhắn.'));
+    }
+  }, [roomId, roomGameId]);
 
   useEffect(() => {
     if (!roomId) {
@@ -57,9 +70,8 @@ export function useVoiceRoom(roomId: string | null) {
   const sendMessage = async (content: string) => {
     if (!roomId || !content.trim()) return;
     const sent = await voiceService.sendMessage(
-      roomId, 
-      content, 
-      undefined,
+      roomId,
+      content,
       room?.gameId
     );
     setMessages(prev => [...prev, sent]);
@@ -69,6 +81,7 @@ export function useVoiceRoom(roomId: string | null) {
     room,
     messages,
     loading,
+    error,
     sendMessage,
     refreshRoom: loadRoom,
   };

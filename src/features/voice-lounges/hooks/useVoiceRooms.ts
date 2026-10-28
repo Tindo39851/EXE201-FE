@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { getApiErrorMessage } from '@/services/api-client';
 import { voiceService } from '../services/voice.service';
 import type { VoiceRoom, GameHubItem, CreateRoomDto } from '../types/voice.types';
 
@@ -10,12 +11,18 @@ export function useVoiceRooms() {
   const [activeGameId, setActiveGameId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
 
   // Fetch games categories
   const loadGames = useCallback(async () => {
-    const list = await voiceService.getGameHubs();
-    setGames(list);
+    try {
+      const list = await voiceService.getGameHubs();
+      setGames(list);
+      setError(null);
+    } catch (reason) {
+      setError(getApiErrorMessage(reason, 'Không thể tải danh sách game.'));
+    }
   }, []);
 
   // Fetch rooms
@@ -23,6 +30,9 @@ export function useVoiceRooms() {
     try {
       const roomList = await voiceService.getVoiceRooms(activeGameId);
       setRooms(roomList);
+      setError(null);
+    } catch (reason) {
+      setError(getApiErrorMessage(reason, 'Không thể tải voice room.'));
     } finally {
       setLoading(false);
     }
@@ -45,7 +55,7 @@ export function useVoiceRooms() {
 
   // Compute total online count across all rooms
   const totalPlayersOnline = useMemo(() => {
-    return rooms.reduce((sum, r) => sum + r.onlineCount, 0) + 25; // 37 in mockup
+    return rooms.reduce((sum, r) => sum + r.onlineCount, 0);
   }, [rooms]);
 
   // Filtered rooms based on game and search query
@@ -77,6 +87,7 @@ export function useVoiceRooms() {
     setSearchQuery,
     totalPlayersOnline,
     loading,
+    error,
     isCreateModalOpen,
     setIsCreateModalOpen,
     handleCreateRoom,

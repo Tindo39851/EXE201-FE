@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { X, Crown, Sparkles, ShieldCheck, Zap, Bot, Check, ArrowRight, Wallet, AlertCircle, Loader2 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { X, Crown, Sparkles, ShieldCheck, Zap, Bot, ArrowRight, Wallet, AlertCircle, Loader2 } from 'lucide-react';
 import { apiClient, getApiErrorMessage } from '@/services/api-client';
 import { walletService } from '@/features/wallet/services/wallet.service';
 
@@ -18,18 +17,21 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { user } = useAuth();
-  const [walletBalance, setWalletBalance] = useState<number>(150000);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
-      walletService.getBalance().then((bal) => setWalletBalance(bal));
+    if (!isOpen) return;
+    const timeout = window.setTimeout(() => {
       setIsSuccess(false);
       setErrorMsg(null);
-    }
+      void walletService.getBalance()
+        .then(setWalletBalance)
+        .catch((error) => setErrorMsg(getApiErrorMessage(error, 'Không thể tải số dư ví.')));
+    }, 0);
+    return () => window.clearTimeout(timeout);
   }, [isOpen]);
 
   if (!isOpen) return null;

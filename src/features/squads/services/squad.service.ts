@@ -120,17 +120,8 @@ export const squadService = {
     try {
       const response = await apiClient.post<MatchmakingResult>('/squads/matchmake', dto);
       return response.data;
-    } catch {
-      // Mock matchmaking response
-      return {
-        lobbyId: `lobby_${Date.now()}`,
-        game: dto.gameId,
-        channel: 'ranked-solo-duo',
-        matchedCount: 3,
-        maxPlayers: 5,
-        voiceChannelUrl: 'https://gametrust.gg/voice/room-9182',
-        status: 'MATCHED',
-      };
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Matchmaking failed'));
     }
   },
 

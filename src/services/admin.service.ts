@@ -44,29 +44,8 @@ export interface AdminClan {
 
 export const adminService = {
   async getUsers(): Promise<AdminUser[]> {
-    try {
-      const response = await apiClient.get<AdminUser[]>('/admin/users');
-      return response.data || [];
-    } catch {
-      return [
-        {
-          id: 'admin_1',
-          username: 'admin',
-          email: 'admin@gametrust.gg',
-          role: 'ADMIN',
-          reputationScore: 100,
-          active: true,
-        },
-        {
-          id: 'member_1',
-          username: 'demo',
-          email: 'demo@gametrust.gg',
-          role: 'MEMBER',
-          reputationScore: 95,
-          active: true,
-        },
-      ];
-    }
+    const response = await apiClient.get<AdminUser[]>('/admin/users');
+    return response.data || [];
   },
 
   async toggleUserStatus(userId: string): Promise<AdminUser> {
@@ -75,35 +54,8 @@ export const adminService = {
   },
 
   async getTournaments(): Promise<AdminTournament[]> {
-    try {
-      const response = await apiClient.get<AdminTournament[]>('/admin/tournaments');
-      return response.data || [];
-    } catch {
-      return [
-        {
-          id: 'tourn_val_01',
-          title: 'Cyberpunk Champions Cup 2026',
-          game: 'VALORANT',
-          format: '5v5 Single Elimination',
-          prizePool: '$10,000 USD',
-          maxTeams: 16,
-          registeredTeams: 12,
-          status: 'UPCOMING',
-          startDate: '2026-11-15',
-        },
-        {
-          id: 'tourn_cs2_02',
-          title: 'Neon Major Championship',
-          game: 'CS2',
-          format: '5v5 Double Elimination',
-          prizePool: '$25,000 USD',
-          maxTeams: 32,
-          registeredTeams: 28,
-          status: 'ONGOING',
-          startDate: '2026-10-01',
-        },
-      ];
-    }
+    const response = await apiClient.get<AdminTournament[]>('/admin/tournaments');
+    return response.data || [];
   },
 
   async createTournament(data: Partial<AdminTournament>): Promise<AdminTournament> {
@@ -121,40 +73,8 @@ export const adminService = {
   },
 
   async getReports(): Promise<AdminReport[]> {
-    try {
-      const response = await apiClient.get<AdminReport[]>('/admin/reports');
-      return response.data || [];
-    } catch {
-      return [
-        {
-          id: '#RPT_1024',
-          type: 'TOXICITY',
-          user: 'TOXIC_WARRIOR',
-          reason: 'Verbal harassment and abusive language in lobby voice chat',
-          status: 'PENDING',
-          reporter: 'CyberSoldier',
-          badgeColor: 'red',
-        },
-        {
-          id: '#RPT_1025',
-          type: 'CHEATING',
-          user: 'AIM_BOTTER_99',
-          reason: 'Third party aim-assist and wallhack detection in tournament qualifiers',
-          status: 'PENDING',
-          reporter: 'PhantomReaper',
-          badgeColor: 'red',
-        },
-        {
-          id: '#RPT_1026',
-          type: 'AFK',
-          user: 'GHOST_LEAVER',
-          reason: 'Abandoned competitive ranked match at round 3 without reconnecting',
-          status: 'PENDING',
-          reporter: 'NeonBlade',
-          badgeColor: 'yellow',
-        },
-      ];
-    }
+    const response = await apiClient.get<AdminReport[]>('/admin/reports');
+    return response.data || [];
   },
 
   async resolveReport(id: string, action: 'PENALTY' | 'BAN'): Promise<AdminReport> {
@@ -168,43 +88,8 @@ export const adminService = {
   },
 
   async getClans(): Promise<AdminClan[]> {
-    try {
-      const response = await apiClient.get<AdminClan[]>('/admin/clans');
-      return response.data || [];
-    } catch {
-      return [
-        {
-          id: 1,
-          name: 'Cyber Samurai',
-          tag: 'CSAM',
-          leader: 'RONIN_X',
-          membersCount: 48,
-          tier: 'ELITE',
-          rating: 2840,
-          region: 'APAC',
-        },
-        {
-          id: 2,
-          name: 'Neon Phantoms',
-          tag: 'NPH',
-          leader: 'SHADOW_WALKER',
-          membersCount: 35,
-          tier: 'PRO',
-          rating: 2650,
-          region: 'NA-EAST',
-        },
-        {
-          id: 3,
-          name: 'Apex Syndicate',
-          tag: 'APEX',
-          leader: 'SYNDICATE_BOSS',
-          membersCount: 22,
-          tier: 'CHALLENGER',
-          rating: 2490,
-          region: 'EU-CENTRAL',
-        },
-      ];
-    }
+    const response = await apiClient.get<AdminClan[]>('/admin/clans');
+    return response.data || [];
   },
 
   async deleteClan(id: string | number): Promise<void> {

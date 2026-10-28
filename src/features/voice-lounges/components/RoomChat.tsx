@@ -2,15 +2,18 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Smile, ChevronRight, Hash } from 'lucide-react';
+import { getApiErrorMessage } from '@/services/api-client';
 import type { ChatMessage } from '../types/voice.types';
 
 interface RoomChatProps {
   messages: ChatMessage[];
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string) => Promise<void>;
 }
 
 export const RoomChat: React.FC<RoomChatProps> = ({ messages, onSendMessage }) => {
   const [inputText, setInputText] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
   const previousLastMessageIdRef = useRef<string | undefined>(undefined);
@@ -36,11 +39,19 @@ export const RoomChat: React.FC<RoomChatProps> = ({ messages, onSendMessage }) =
     shouldAutoScrollRef.current = distanceFromBottom < 48;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
-    onSendMessage(inputText.trim());
-    setInputText('');
+    if (!inputText.trim() || isSending) return;
+    setIsSending(true);
+    setSendError(null);
+    try {
+      await onSendMessage(inputText.trim());
+      setInputText('');
+    } catch (error) {
+      setSendError(getApiErrorMessage(error, 'Không thể gửi tin nhắn. Vui lòng thử lại.'));
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -104,6 +115,7 @@ export const RoomChat: React.FC<RoomChatProps> = ({ messages, onSendMessage }) =
 
       {/* Input Form */}
       <div className="p-3 border-t border-gray-800/80 bg-[#0B0F17]">
+        {sendError && <p role="alert" className="mb-2 text-[11px] text-rose-400">{sendError}</p>}
         <form onSubmit={handleSubmit} className="relative flex items-center">
           <input
             type="text"
@@ -121,7 +133,7 @@ export const RoomChat: React.FC<RoomChatProps> = ({ messages, onSendMessage }) =
             </button>
             <button
               type="submit"
-              disabled={!inputText.trim()}
+              disabled={!inputText.trim() || isSending}
               className="text-gt-cyan hover:text-[#33f3ff] p-1.5 rounded-lg hover:bg-cyan-950/40 transition-colors disabled:opacity-30 disabled:hover:text-gt-cyan"
             >
               <Send className="w-4 h-4" />

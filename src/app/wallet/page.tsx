@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import {
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react';
 import { walletService } from '@/features/wallet/services/wallet.service';
 import type { PaymentMethod, EWalletProvider, WalletTransaction } from '@/features/wallet/types/wallet.types';
+import { getApiErrorMessage } from '@/services/api-client';
 
 interface PresetItem {
   label: string;
@@ -46,7 +48,7 @@ function WalletContent() {
   const statusParam = searchParams.get('status');
   const orderCodeParam = searchParams.get('orderCode');
 
-  const [balance, setBalance] = useState<number>(150000);
+  const [balance, setBalance] = useState<number>(0);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('E_WALLET');
   const [ewalletProvider, setEwalletProvider] = useState<EWalletProvider>('PAYOS');
   const [selectedAmount, setSelectedAmount] = useState<number>(50000);
@@ -87,8 +89,9 @@ function WalletContent() {
       ]);
       setBalance(currentBal);
       setTransactions(txList);
-    } catch {
-      // ignore
+    } catch (error) {
+      setSuccessToast(getApiErrorMessage(error, 'Không thể tải số dư hoặc lịch sử giao dịch.'));
+      setTimeout(() => setSuccessToast(null), 4000);
     }
   }, []);
 
@@ -103,16 +106,19 @@ function WalletContent() {
       setQrUrl(order.qrUrl);
       setCheckoutUrl(order.checkoutUrl);
       setTimeLeft(899);
-    } catch (err: any) {
-      setSuccessToast(err?.message || 'Không thể tạo mã VietQR từ PayOS. Vui lòng thử lại.');
+    } catch (error: unknown) {
+      setSuccessToast(getApiErrorMessage(error, 'Không thể tạo mã VietQR từ PayOS. Vui lòng thử lại.'));
       setTimeout(() => setSuccessToast(null), 4000);
     }
   }, [ewalletProvider]);
 
   // Initial load
   useEffect(() => {
-    refreshUserData();
-    generateOrder(50000);
+    const timer = window.setTimeout(() => {
+      void refreshUserData();
+      void generateOrder(50000);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [refreshUserData, generateOrder]);
 
   // Handle PayOS return redirect (?status=success&orderCode=XXXXX)
@@ -120,33 +126,37 @@ function WalletContent() {
     if (statusParam === 'success' && orderCodeParam) {
       const code = parseInt(orderCodeParam, 10);
       if (!isNaN(code)) {
-        setIsVerifying(true);
-        walletService.checkPaymentStatus(code).then(async (res) => {
-          setIsVerifying(false);
-          const [updatedBal, updatedTx] = await Promise.all([
-            walletService.getBalance(),
-            walletService.getTransactions(),
-          ]);
-          setBalance(updatedBal);
-          setTransactions(updatedTx);
-          setSuccessOrderDetails({
-            orderCode: code,
-            amount: res.amountVnd || 0,
-            newBalance: updatedBal,
-          });
-          setShowSuccessScreen(true);
-        }).catch(() => {
-          setIsVerifying(false);
-          setShowSuccessScreen(true);
-          setSuccessOrderDetails({
-            orderCode: code,
-            amount: 0,
-            newBalance: balance,
-          });
-        });
+        const timer = window.setTimeout(async () => {
+          setIsVerifying(true);
+          try {
+            const res = await walletService.checkPaymentStatus(code);
+            const [updatedBal, updatedTx] = await Promise.all([
+              walletService.getBalance(),
+              walletService.getTransactions(),
+            ]);
+            setBalance(updatedBal);
+            setTransactions(updatedTx);
+            setSuccessOrderDetails({
+              orderCode: code,
+              amount: res.amountVnd || 0,
+              newBalance: updatedBal,
+            });
+          } catch {
+            const currentBalance = await walletService.getBalance();
+            setSuccessOrderDetails({
+              orderCode: code,
+              amount: 0,
+              newBalance: currentBalance,
+            });
+          } finally {
+            setIsVerifying(false);
+            setShowSuccessScreen(true);
+          }
+        }, 0);
+        return () => window.clearTimeout(timer);
       }
     }
-  }, [statusParam, orderCodeParam, balance]);
+  }, [statusParam, orderCodeParam]);
 
   // Background polling for QR payments: checks PayOS status every 4s while order is active
   useEffect(() => {
@@ -295,20 +305,27 @@ function WalletContent() {
   // Dev simulation
   const handleSimulatePayment = async () => {
     setIsVerifying(true);
-    await walletService.confirmDeposit(currentDepositAmount, selectedMethod === 'E_WALLET' ? 'QR' : 'Card', orderCode || undefined, transferNote);
-    const [newBal, newTx] = await Promise.all([
-      walletService.getBalance(),
-      walletService.getTransactions(),
-    ]);
-    setBalance(newBal);
-    setTransactions(newTx);
-    setIsVerifying(false);
-    setSuccessOrderDetails({
-      orderCode: orderCode || 0,
-      amount: currentDepositAmount,
-      newBalance: newBal,
-    });
-    setShowSuccessScreen(true);
+    try {
+      if (!orderCode) throw new Error('Chưa có mã giao dịch để xác nhận.');
+      await walletService.confirmDeposit(orderCode);
+      const [newBal, newTx] = await Promise.all([
+        walletService.getBalance(),
+        walletService.getTransactions(),
+      ]);
+      setBalance(newBal);
+      setTransactions(newTx);
+      setSuccessOrderDetails({
+        orderCode,
+        amount: currentDepositAmount,
+        newBalance: newBal,
+      });
+      setShowSuccessScreen(true);
+    } catch (error) {
+      setSuccessToast(getApiErrorMessage(error, 'Không thể xác nhận giao dịch.'));
+      setTimeout(() => setSuccessToast(null), 3500);
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleContinueDepositing = () => {
@@ -660,12 +677,15 @@ function WalletContent() {
 
                     {/* QR Image or Loading */}
                     {qrUrl ? (
-                      <img
+                      <Image
                         src={qrUrl}
                         alt="PayOS VietQR Code"
+                        width={256}
+                        height={256}
+                        unoptimized
                         className="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded bg-white p-2"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://img.vietqr.io/image/970422-${accountNumber}-compact2.png?amount=${currentDepositAmount}&addInfo=${encodeURIComponent(transferNote)}&accountName=${encodeURIComponent(accountName)}`;
+                        onError={(event) => {
+                          event.currentTarget.src = `https://img.vietqr.io/image/970422-${accountNumber}-compact2.png?amount=${currentDepositAmount}&addInfo=${encodeURIComponent(transferNote)}&accountName=${encodeURIComponent(accountName)}`;
                         }}
                       />
                     ) : (

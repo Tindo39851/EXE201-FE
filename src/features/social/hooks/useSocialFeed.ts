@@ -50,7 +50,16 @@ export function useSocialFeed() {
     try {
       await socialService.toggleLikePost(postId);
     } catch {
-      // Revert if API fails
+      setPosts(prev => prev.map(p => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            liked: !p.liked,
+            likes: p.liked ? p.likes - 1 : p.likes + 1,
+          };
+        }
+        return p;
+      }));
     }
   };
 

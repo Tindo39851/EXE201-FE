@@ -120,7 +120,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onJoin }) => {
                 return (
                   <div
                     key={member.id || index}
-                    className="relative flex items-center justify-center"
+                    className={`relative items-center justify-center shrink-0 ${index >= 5 ? 'hidden sm:flex' : 'flex'}`}
                     title={member.username}
                   >
                     <div
@@ -145,7 +145,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onJoin }) => {
               return (
                 <div
                   key={`empty_${index}`}
-                  className="w-9 h-9 rounded-full border border-dashed border-gray-800 flex items-center justify-center text-gray-600 text-xs font-mono"
+                  className={`w-9 h-9 rounded-full border border-dashed border-gray-800 items-center justify-center text-gray-600 text-xs font-mono shrink-0 ${index >= 5 ? 'hidden sm:flex' : 'flex'}`}
                 >
                   +
                 </div>

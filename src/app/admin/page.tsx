@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { adminService, type AdminUser, type AdminTournament, type AdminReport, type AdminClan } from '@/services/admin.service';
+import { getApiErrorMessage } from '@/services/api-client';
 import {
   ShieldAlert,
   Users,
@@ -80,6 +81,7 @@ export default function AdminPage() {
   const [clans, setClans] = useState<AdminClan[]>([]);
   const [loadingClans, setLoadingClans] = useState(true);
   const [actingClanId, setActingClanId] = useState<string | number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // AI Sentinel & Moderation States
   const [aiStatus, setAiStatus] = useState<AiStatusResponse | null>(null);
@@ -136,6 +138,9 @@ export default function AdminPage() {
           setTournaments(tournamentData);
           setReports(reportData);
           setClans(clanData);
+          setActionError(null);
+        } catch (error) {
+          setActionError(getApiErrorMessage(error, 'Không thể tải dữ liệu Admin Console.'));
         } finally {
           setLoadingUsers(false);
           setLoadingTournaments(false);
@@ -154,8 +159,8 @@ export default function AdminPage() {
     try {
       await adminService.deleteClan(clanId);
       setClans(prev => prev.filter(c => c.id !== clanId));
-    } catch {
-      setClans(prev => prev.filter(c => c.id !== clanId));
+    } catch (error) {
+      setActionError(getApiErrorMessage(error, 'Không thể xóa clan.'));
     } finally {
       setActingClanId(null);
     }
@@ -178,11 +183,10 @@ export default function AdminPage() {
         prev.map(u => (u.id === editingUser.id ? { ...u, reputationScore: editScore, role: editRole } : u))
       );
       setEditingUser(null);
-    } catch {
-      setUsers(prev =>
-        prev.map(u => (u.id === editingUser.id ? { ...u, reputationScore: editScore, role: editRole } : u))
-      );
-      setEditingUser(null);
+    } catch (error) {
+      setActionError(getApiErrorMessage(error, 'Không thể cập nhật user.'));
+      const refreshed = await adminService.getUsers().catch(() => null);
+      if (refreshed) setUsers(refreshed);
     } finally {
       setSavingUserEdit(false);
     }
@@ -195,10 +199,8 @@ export default function AdminPage() {
       setReports(prev =>
         prev.map(r => (r.id === reportId ? { ...r, status: 'RESOLVED', resolution: updated.resolution || (action === 'BAN' ? 'Account Suspended' : 'Penalized (-20 REP)') } : r))
       );
-    } catch {
-      setReports(prev =>
-        prev.map(r => (r.id === reportId ? { ...r, status: 'RESOLVED', resolution: action === 'BAN' ? 'Account Suspended' : 'Penalized (-20 REP)' } : r))
-      );
+    } catch (error) {
+      setActionError(getApiErrorMessage(error, 'Không thể xử lý report.'));
     } finally {
       setActingReportId(null);
     }
@@ -211,10 +213,8 @@ export default function AdminPage() {
       setReports(prev =>
         prev.map(r => (r.id === reportId ? { ...r, status: 'DISMISSED', resolution: 'Dismissed (No violation)' } : r))
       );
-    } catch {
-      setReports(prev =>
-        prev.map(r => (r.id === reportId ? { ...r, status: 'DISMISSED', resolution: 'Dismissed (No violation)' } : r))
-      );
+    } catch (error) {
+      setActionError(getApiErrorMessage(error, 'Không thể bỏ qua report.'));
     } finally {
       setActingReportId(null);
     }
@@ -296,7 +296,7 @@ export default function AdminPage() {
     setAuditingPlayer(true);
     aiChatService.analyzePlayer(data)
       .then(res => setAuditAnalysis(res))
-      .catch((err: any) => setAuditError(err?.message || 'Không thể phân tích báo cáo'))
+      .catch((err: unknown) => setAuditError(getApiErrorMessage(err, 'Không thể phân tích báo cáo')))
       .finally(() => setAuditingPlayer(false));
   };
 
@@ -316,8 +316,8 @@ export default function AdminPage() {
     try {
       const res = await aiChatService.analyzePlayer(parsed);
       setAuditAnalysis(res);
-    } catch (err: any) {
-      setAuditError(err?.message || 'Không thể thẩm định dữ liệu player.');
+    } catch (err: unknown) {
+      setAuditError(getApiErrorMessage(err, 'Không thể thẩm định dữ liệu player.'));
     } finally {
       setAuditingPlayer(false);
     }
@@ -337,8 +337,8 @@ export default function AdminPage() {
     try {
       const res = await aiChatService.chat(newMsgs);
       setAdminAiMessages(prev => [...prev, { role: 'assistant' as const, content: res.reply }]);
-    } catch (err: any) {
-      setAdminAiError(err?.message || 'Không thể kết nối AI Copilot.');
+    } catch (err: unknown) {
+      setAdminAiError(getApiErrorMessage(err, 'Không thể kết nối AI Copilot.'));
     } finally {
       setAdminAiSending(false);
     }
@@ -372,22 +372,8 @@ export default function AdminPage() {
       setTournaments(prev => [created, ...prev]);
       setIsCreateTournOpen(false);
       setNewTitle('');
-    } catch {
-      // Local fallback
-      const mockCreated: AdminTournament = {
-        id: `tourn_${Date.now()}`,
-        title: newTitle.trim(),
-        game: newGame,
-        format: newFormat,
-        prizePool: newPrizePool.trim(),
-        maxTeams: Number(newMaxTeams),
-        registeredTeams: 0,
-        status: 'UPCOMING',
-        startDate: newStartDate,
-      };
-      setTournaments(prev => [mockCreated, ...prev]);
-      setIsCreateTournOpen(false);
-      setNewTitle('');
+    } catch (error) {
+      setActionError(getApiErrorMessage(error, 'Không thể tạo tournament.'));
     } finally {
       setSubmittingTourn(false);
     }
@@ -400,10 +386,8 @@ export default function AdminPage() {
       setTournaments(prev =>
         prev.map(t => (t.id === id ? { ...t, status: updated.status || status } : t))
       );
-    } catch {
-      setTournaments(prev =>
-        prev.map(t => (t.id === id ? { ...t, status } : t))
-      );
+    } catch (error) {
+      setActionError(getApiErrorMessage(error, 'Không thể cập nhật tournament.'));
     } finally {
       setActingTournId(null);
     }
@@ -415,8 +399,8 @@ export default function AdminPage() {
     try {
       await adminService.deleteTournament(id);
       setTournaments(prev => prev.filter(t => t.id !== id));
-    } catch {
-      setTournaments(prev => prev.filter(t => t.id !== id));
+    } catch (error) {
+      setActionError(getApiErrorMessage(error, 'Không thể xóa tournament.'));
     } finally {
       setActingTournId(null);
     }
@@ -429,11 +413,8 @@ export default function AdminPage() {
       setUsers(prev =>
         prev.map(u => (u.id === userId ? { ...u, active: updated.active ?? !u.active } : u))
       );
-    } catch {
-      // Local fallback toggle
-      setUsers(prev =>
-        prev.map(u => (u.id === userId ? { ...u, active: !u.active } : u))
-      );
+    } catch (error) {
+      setActionError(getApiErrorMessage(error, 'Không thể thay đổi trạng thái user.'));
     } finally {
       setActingId(null);
     }
@@ -559,6 +540,14 @@ export default function AdminPage() {
           </div>
         </div>
       </header>
+
+      {actionError && (
+        <div role="alert" className="fixed right-4 top-20 z-[70] flex max-w-md items-start gap-3 border border-gt-red bg-[#16090D] px-4 py-3 text-sm text-rose-300 shadow-xl">
+          <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+          <span className="flex-1">{actionError}</span>
+          <button onClick={() => setActionError(null)} aria-label="Close error"><X size={16} /></button>
+        </div>
+      )}
 
       {/* BODY WITH SIDEBAR + MAIN CONTENT */}
       <div className="pt-16 flex-1 flex flex-col md:flex-row max-w-7xl mx-auto w-full">

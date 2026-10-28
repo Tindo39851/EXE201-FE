@@ -4,7 +4,6 @@ import type {
   GameHubItem, 
   ChatMessage, 
   CreateRoomDto,
-  VoiceMember,
   VoiceJoinCredentials
 } from '../types/voice.types';
 
@@ -45,14 +44,6 @@ interface ApiChatMessage {
   content: string;
   createdAt: string;
 }
-
-const INITIAL_GAMES: GameHubItem[] = [
-  { id: 'all', name: 'ALL GAMES', shortName: 'ALL', count: 8 },
-  { id: 'league-of-legends', name: 'League of Legends', shortName: 'LOL', count: 2 },
-  { id: 'valorant', name: 'Valorant', shortName: 'VAL', count: 2 },
-  { id: 'lien-quan', name: 'Liên Quân Mobile', shortName: 'AOV', count: 2 },
-  { id: 'free-fire', name: 'Free Fire', shortName: 'FF', count: 2 },
-];
 
 const SUPPORTED_GAME_IDS = new Set(['free-fire', 'league-of-legends', 'lien-quan', 'valorant']);
 const SUPPORTED_ROOM_IDS = new Set([
@@ -256,128 +247,40 @@ const INITIAL_ROOMS: VoiceRoom[] = [
   },
 ];
 
-const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
-  'room-lol-1': [
-    {
-      id: 'msg-1',
-      channelId: 'room-lol-1',
-      authorId: 'u1',
-      authorUsername: 'SYNAPSE',
-      authorAvatarLetter: 'S',
-      authorColor: '#00F0FF',
-      content: "alright let's grind 3 more games, we're on a win streak",
-      createdAt: '1m ago',
-    },
-    {
-      id: 'msg-2',
-      channelId: 'room-lol-1',
-      authorId: 'u2',
-      authorUsername: 'HECTER',
-      authorAvatarLetter: 'H',
-      authorColor: '#00F0FF',
-      content: "I'm on support, ping me if you need a gank covered",
-      createdAt: '1m ago',
-    },
-    {
-      id: 'msg-3',
-      channelId: 'room-lol-1',
-      authorId: 'u3',
-      authorUsername: 'RIFTBREAK',
-      authorAvatarLetter: 'R',
-      authorColor: '#00F0FF',
-      content: 'mid diff incoming, get ready everyone',
-      createdAt: '1m ago',
-    },
-    {
-      id: 'msg-4',
-      channelId: 'room-lol-1',
-      authorId: 'system',
-      authorUsername: 'SYSTEM',
-      content: '— CRONUS joined the room —',
-      createdAt: 'just now',
-      isSystem: true,
-    },
-    {
-      id: 'msg-5',
-      channelId: 'room-lol-1',
-      authorId: 'u1',
-      authorUsername: 'SYNAPSE',
-      authorAvatarLetter: 'S',
-      authorColor: '#00F0FF',
-      content: 'welcome! do we need another support or ADC?',
-      createdAt: 'just now',
-    },
-    {
-      id: 'msg-6',
-      channelId: 'room-lol-1',
-      authorId: 'u2',
-      authorUsername: 'HECTER',
-      authorAvatarLetter: 'H',
-      authorColor: '#00F0FF',
-      content: "support slot open, let's go squad 🚀",
-      createdAt: 'just now',
-    },
-    {
-      id: 'msg-7',
-      channelId: 'room-lol-1',
-      authorId: 'u3',
-      authorUsername: 'RIFTBREAK',
-      authorAvatarLetter: 'R',
-      authorColor: '#00F0FF',
-      content: 'game 1 pick Orianna, game 2 pick Syndra ok?',
-      createdAt: 'just now',
-    },
-  ],
-};
-
 let localRooms: VoiceRoom[] = INITIAL_ROOMS.filter(room =>
   SUPPORTED_GAME_IDS.has(room.gameId) && SUPPORTED_ROOM_IDS.has(room.id)
 );
-const localMessages: Record<string, ChatMessage[]> = { ...INITIAL_MESSAGES };
 
 export const voiceService = {
   /**
    * Get all game categories with room counts
    */
   async getGameHubs(): Promise<GameHubItem[]> {
-    try {
-      const res = await apiClient.get<ApiGameHub[]>('/community/games');
-      if (Array.isArray(res.data) && res.data.length > 0) {
-        // Map backend games to GameHubItem (only the 4 supported games)
-        const items: GameHubItem[] = res.data
-          .filter(g => SUPPORTED_GAME_IDS.has(g.id))
-          .map(g => {
-            const voiceChannels = (g.channels || []).filter(c => c.type === 'VOICE');
-            return {
-              id: g.id,
-              name: g.id === 'lien-quan' ? 'Liên Quân Mobile' : g.name,
-              shortName: g.shortName || g.name.substring(0, 3).toUpperCase(),
-              count: voiceChannels.length || 2,
-            };
-          });
-        if (items.length === 0) {
-          return INITIAL_GAMES;
-        }
-        const totalCount = items.reduce((sum, g) => sum + g.count, 0);
-        return [{ id: 'all', name: 'ALL GAMES', shortName: 'ALL', count: totalCount }, ...items];
-      }
-    } catch {
-      // Backend not yet returning or error -> fallback to rich initial list
-    }
-    return INITIAL_GAMES;
+    const res = await apiClient.get<ApiGameHub[]>('/community/games');
+    const items: GameHubItem[] = (Array.isArray(res.data) ? res.data : [])
+      .filter(g => SUPPORTED_GAME_IDS.has(g.id))
+      .map(g => {
+        const voiceChannels = (g.channels || []).filter(c => c.type === 'VOICE');
+        return {
+          id: g.id,
+          name: g.id === 'lien-quan' ? 'Liên Quân Mobile' : g.name,
+          shortName: g.shortName || g.name.substring(0, 3).toUpperCase(),
+          count: voiceChannels.length,
+        };
+      });
+    const totalCount = items.reduce((sum, g) => sum + g.count, 0);
+    return [{ id: 'all', name: 'ALL GAMES', shortName: 'ALL', count: totalCount }, ...items];
   },
 
   /**
    * Get all active voice rooms, with optional gameId filter
    */
   async getVoiceRooms(gameId?: string): Promise<VoiceRoom[]> {
-    try {
-      if (gameId && gameId !== 'all') {
+    if (gameId && gameId !== 'all') {
         const res = await apiClient.get<ApiChannel[]>(`/community/games/${gameId}/channels`);
         if (Array.isArray(res.data)) {
           const voiceChannels = res.data.filter(c => c.type === 'VOICE');
-          if (voiceChannels.length > 0) {
-            const mapped: VoiceRoom[] = voiceChannels.map(c => ({
+          return voiceChannels.map(c => ({
               id: c.id,
               gameId: c.gameId || gameId,
               gameName: c.gameId ? c.gameId.replace(/-/g, ' ').toUpperCase() : 'GAME HUB',
@@ -402,10 +305,9 @@ export const voiceService = {
                 muted: !!m.muted,
               })),
             }));
-            return mapped;
-          }
         }
-      } else {
+        return [];
+    } else {
         // Fetch all games and collect their voice channels
         const res = await apiClient.get<ApiGameHub[]>('/community/games');
         if (Array.isArray(res.data) && res.data.length > 0) {
@@ -440,28 +342,19 @@ export const voiceService = {
               });
             }
           }
-          if (beVoiceChannels.length > 0) return beVoiceChannels;
+          return beVoiceChannels;
         }
-      }
-    } catch {
-      // Fallback to local rich mock rooms
+        return [];
     }
-
-    if (!gameId || gameId === 'all') {
-      return localRooms;
-    }
-    return localRooms.filter(r => r.gameId.toLowerCase() === gameId.toLowerCase());
   },
 
   /**
    * Get details for a single room
    */
   async getRoomDetails(roomId: string): Promise<VoiceRoom | null> {
-    try {
-      const res = await apiClient.get<ApiChannel>(`/community/rooms/${roomId}`);
-      if (res.data) {
-        const c = res.data;
-        return {
+    const res = await apiClient.get<ApiChannel>(`/community/rooms/${roomId}`);
+    const c = res.data;
+    return {
           id: c.id,
           gameId: c.gameId || 'league-of-legends',
           gameName: c.gameId ? c.gameId.replace(/-/g, ' ') : 'League of Legends',
@@ -485,72 +378,31 @@ export const voiceService = {
             isHost: m.userId === c.ownerId,
             muted: !!m.muted,
           })),
-        };
-      }
-    } catch {
-      // Fallback
-    }
-
-    const found = localRooms.find(r => r.id === roomId);
-    return found || localRooms[0];
+    };
   },
 
   /**
    * Create a new voice room
    */
   async createRoom(dto: CreateRoomDto): Promise<VoiceRoom> {
-    try {
-      const res = await apiClient.post<ApiChannel>(`/community/games/${dto.gameId}/rooms`, {
-        name: dto.name,
-        capacity: dto.capacity,
-      });
-      if (res.data) {
-        const c = res.data;
-        const newRoom: VoiceRoom = {
-          id: c.id,
-          gameId: dto.gameId,
-          gameName: dto.gameId.replace(/-/g, ' ').toUpperCase(),
-          name: c.name,
-          tag: dto.tag || dto.rankRequirement || 'Casual',
-          rankRequirement: dto.rankRequirement,
-          playMode: dto.playMode,
-          visibility: dto.visibility || 'Public',
-          ping: 20,
-          capacity: dto.capacity,
-          onlineCount: 0,
-          members: [],
-        };
-        localRooms = [newRoom, ...localRooms];
-        return newRoom;
-      }
-    } catch {
-      // Local fallback
-    }
-
+    const res = await apiClient.post<ApiChannel>(`/community/games/${dto.gameId}/rooms`, {
+      name: dto.name,
+      capacity: dto.capacity,
+    });
+    const c = res.data;
     const newRoom: VoiceRoom = {
-      id: `room-custom-${Date.now()}`,
+      id: c.id,
       gameId: dto.gameId,
       gameName: dto.gameId.replace(/-/g, ' ').toUpperCase(),
-      name: dto.name,
+      name: c.name,
       tag: dto.tag || dto.rankRequirement || 'Casual',
       rankRequirement: dto.rankRequirement,
       playMode: dto.playMode,
       visibility: dto.visibility || 'Public',
-      ping: Math.floor(Math.random() * 20) + 14,
+      ping: 20,
       capacity: dto.capacity,
-      onlineCount: 1,
-      members: [
-        {
-          id: `m_${Date.now()}`,
-          userId: 'current-user',
-          username: 'YOU',
-          avatarLetter: 'U',
-          avatarColor: '#00F0FF',
-          isHost: true,
-          role: 'Flex',
-          rank: 'Diamond',
-        },
-      ],
+      onlineCount: 0,
+      members: [],
     };
     localRooms = [newRoom, ...localRooms];
     return newRoom;
@@ -571,48 +423,18 @@ export const voiceService = {
    * Join a voice room
    */
   async joinRoom(roomId: string, currentUser?: { id: string; username: string }): Promise<VoiceRoom> {
-    try {
-      await apiClient.post(`/community/rooms/${roomId}/join`);
-    } catch {
-      // Continue with local update for seamless experience
-    }
-
-    const roomIndex = localRooms.findIndex(r => r.id === roomId);
-    if (roomIndex !== -1) {
-      const room = { ...localRooms[roomIndex] };
-      const userExists = room.members.some(m => m.userId === (currentUser?.id || 'current-user'));
-      if (!userExists) {
-        const username = currentUser?.username || 'YOU';
-        const newMember: VoiceMember = {
-          id: `mem_${Date.now()}`,
-          userId: currentUser?.id || 'current-user',
-          username: username,
-          avatarLetter: username[0].toUpperCase(),
-          avatarColor: '#00F0FF',
-          role: 'Flex',
-          rank: 'Diamond',
-          isCurrentUser: true,
-          muted: false,
-        };
-        room.members = [...room.members, newMember];
-        room.onlineCount = room.members.length;
-        localRooms[roomIndex] = room;
-      }
-      return localRooms[roomIndex];
-    }
-
-    return localRooms[0];
+    await apiClient.post(`/community/rooms/${roomId}/join`);
+    void currentUser;
+    const room = await this.getRoomDetails(roomId);
+    if (!room) throw new Error('Voice room not found after joining.');
+    return room;
   },
 
   /**
    * Leave a voice room
    */
   async leaveRoom(roomId: string, userId: string = 'current-user'): Promise<void> {
-    try {
-      await apiClient.post(`/community/rooms/${roomId}/leave`);
-    } catch {
-      // Local update
-    }
+    await apiClient.post(`/community/rooms/${roomId}/leave`);
 
     const roomIndex = localRooms.findIndex(r => r.id === roomId);
     if (roomIndex !== -1) {
@@ -627,11 +449,7 @@ export const voiceService = {
    * Kick a member from a voice room
    */
   async kickMember(roomId: string, memberUserId: string): Promise<void> {
-    try {
-      await apiClient.delete(`/community/rooms/${roomId}/members/${memberUserId}`);
-    } catch {
-      // Local update
-    }
+    await apiClient.delete(`/community/rooms/${roomId}/members/${memberUserId}`);
     const roomIndex = localRooms.findIndex(r => r.id === roomId);
     if (roomIndex !== -1) {
       const room = { ...localRooms[roomIndex] };
@@ -645,11 +463,7 @@ export const voiceService = {
    * Update room configuration (name, capacity, locked)
    */
   async updateRoom(roomId: string, data: { name?: string; capacity?: number; locked?: boolean }): Promise<void> {
-    try {
-      await apiClient.patch(`/community/rooms/${roomId}`, data);
-    } catch {
-      // Local update
-    }
+    await apiClient.patch(`/community/rooms/${roomId}`, data);
     const room = localRooms.find(r => r.id === roomId);
     if (room) {
       if (data.name) room.name = data.name;
@@ -662,11 +476,7 @@ export const voiceService = {
    * Delete custom voice room
    */
   async deleteRoom(roomId: string): Promise<void> {
-    try {
-      await apiClient.delete(`/community/rooms/${roomId}`);
-    } catch {
-      // Local update
-    }
+    await apiClient.delete(`/community/rooms/${roomId}`);
     localRooms = localRooms.filter(r => r.id !== roomId);
   },
 
@@ -674,12 +484,9 @@ export const voiceService = {
    * Get messages for a room/channel
    */
   async getMessages(channelId: string, gameId?: string): Promise<ChatMessage[]> {
-    try {
-      // Try fetching from the channel directly or the game general channel
-      const targetChannel = gameId ? `${gameId}_general` : channelId;
-      const res = await apiClient.get<ApiChatMessage[]>(`/community/channels/${targetChannel}/messages`);
-      if (Array.isArray(res.data) && res.data.length > 0) {
-        return res.data.map(m => ({
+    const targetChannel = gameId ? `${gameId}_general` : channelId;
+    const res = await apiClient.get<ApiChatMessage[]>(`/community/channels/${targetChannel}/messages`);
+    return (Array.isArray(res.data) ? res.data : []).map(m => ({
           id: m.id,
           channelId: m.channelId,
           authorId: m.authorId,
@@ -688,78 +495,40 @@ export const voiceService = {
           authorColor: '#00F0FF',
           content: m.content,
           createdAt: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        }));
-      }
-    } catch {
-      // Fallback
-    }
-
-    return localMessages[channelId] || localMessages['room-lol-1'] || [];
+    }));
   },
 
   /**
    * Send a chat message
    */
-  async sendMessage(channelId: string, content: string, currentUser?: { id: string; username: string }, gameId?: string): Promise<ChatMessage> {
-    try {
-      const targetChannel = gameId ? `${gameId}_general` : channelId;
-      const res = await apiClient.post<ApiChatMessage>(`/community/channels/${targetChannel}/messages`, { content });
-      if (res.data) {
-        const m = res.data;
-        return {
-          id: m.id,
-          channelId: m.channelId,
-          authorId: m.authorId,
-          authorUsername: m.authorUsername,
-          authorAvatarLetter: (m.authorUsername || 'U')[0].toUpperCase(),
-          authorColor: '#00F0FF',
-          content: m.content,
-          createdAt: 'just now',
-        };
-      }
-    } catch {
-      // Local fallback
-    }
-
-    const username = currentUser?.username || 'YOU';
-    const newMsg: ChatMessage = {
-      id: `msg_${Date.now()}`,
-      channelId,
-      authorId: currentUser?.id || 'current-user',
-      authorUsername: username,
-      authorAvatarLetter: username[0].toUpperCase(),
+  async sendMessage(channelId: string, content: string, gameId?: string): Promise<ChatMessage> {
+    const targetChannel = gameId ? `${gameId}_general` : channelId;
+    const res = await apiClient.post<ApiChatMessage>(`/community/channels/${targetChannel}/messages`, { content });
+    const m = res.data;
+    return {
+      id: m.id,
+      channelId: m.channelId,
+      authorId: m.authorId,
+      authorUsername: m.authorUsername,
+      authorAvatarLetter: (m.authorUsername || 'U')[0].toUpperCase(),
       authorColor: '#00F0FF',
-      content,
+      content: m.content,
       createdAt: 'just now',
     };
-
-    if (!localMessages[channelId]) {
-      localMessages[channelId] = [...(localMessages['room-lol-1'] || [])];
-    }
-    localMessages[channelId] = [...localMessages[channelId], newMsg];
-    return newMsg;
   },
 
   /**
    * Delete message
    */
   async deleteMessage(messageId: string): Promise<void> {
-    try {
-      await apiClient.delete(`/community/messages/${messageId}`);
-    } catch {
-      // Local fallback
-    }
+    await apiClient.delete(`/community/messages/${messageId}`);
   },
 
   /**
    * Update member audio state (mute/unmute)
    */
   async updateMemberMute(roomId: string, userId: string, muted: boolean): Promise<void> {
-    try {
-      await apiClient.patch(`/community/rooms/${roomId}/members/${userId}`, { muted });
-    } catch {
-      // Local fallback
-    }
+    await apiClient.patch(`/community/rooms/${roomId}/members/${userId}`, { muted });
 
     const roomIndex = localRooms.findIndex(r => r.id === roomId);
     if (roomIndex !== -1) {

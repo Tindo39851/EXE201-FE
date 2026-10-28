@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Sparkles,
@@ -8,8 +8,6 @@ import {
   Lock,
   Crown,
   ShieldCheck,
-  Zap,
-  Users,
   Radio,
   ArrowRight,
   CheckCircle2,
@@ -58,7 +56,7 @@ export const AiSquadRecommendations: React.FC<AiSquadRecommendationsProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [premiumModalOpen, setPremiumModalOpen] = useState<boolean>(false);
 
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = useCallback(async () => {
     setLoading(true);
     try {
       const res = await apiClient.get<AiResponseData>(
@@ -82,12 +80,12 @@ export const AiSquadRecommendations: React.FC<AiSquadRecommendationsProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeGame]);
 
   useEffect(() => {
-    fetchRecommendations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeGame, user]);
+    const timeout = window.setTimeout(() => void fetchRecommendations(), 0);
+    return () => window.clearTimeout(timeout);
+  }, [fetchRecommendations, user]);
 
   const isUnlocked = Boolean(data?.unlocked || user?.isPremium);
 

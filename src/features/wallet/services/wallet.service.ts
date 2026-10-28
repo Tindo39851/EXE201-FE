@@ -1,4 +1,4 @@
-import { apiClient } from '@/services/api-client';
+import { apiClient, getApiErrorMessage } from '@/services/api-client';
 import type { WalletTransaction, PayOSCheckoutData, EWalletProvider, DepositPreset, PaymentStatusResponse } from '../types/wallet.types';
 
 export const USD_TO_VND_RATE = 25400;
@@ -11,8 +11,7 @@ export const PRESET_AMOUNTS: DepositPreset[] = [
   { label: '500k', vnd: 500000 },
 ];
 
-let currentBalance = 150000; // default 150,000 VNĐ
-let transactionList: WalletTransaction[] = [];
+let currentBalance = 0;
 
 export interface PaymentApiResponse {
   orderCode: number;
@@ -28,45 +27,48 @@ export interface PaymentApiResponse {
   status: string;
 }
 
+interface PaymentTransactionApiResponse {
+  id?: string;
+  orderCode: number;
+  createdAt?: string;
+  method?: 'QR' | 'Card';
+  amountVnd?: number;
+  amountUsd?: number;
+  status?: string;
+  transferNote?: string;
+  description?: string;
+}
+
 export const walletService = {
   async getBalance(): Promise<number> {
-    try {
-      const res = await apiClient.get<{ balance: number }>('/payment/balance');
-      const payload = res.data as { balance: number };
-      if (payload && typeof payload.balance === 'number') {
-        currentBalance = payload.balance;
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('wallet:balance-updated', { detail: currentBalance }));
-        }
+    const res = await apiClient.get<{ balance: number }>('/payment/balance');
+    const payload = res.data as { balance: number };
+    if (payload && typeof payload.balance === 'number') {
+      currentBalance = payload.balance;
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('wallet:balance-updated', { detail: currentBalance }));
       }
-    } catch {
-      // Use local in-memory fallback
     }
     return currentBalance;
   },
 
   async getTransactions(): Promise<WalletTransaction[]> {
-    try {
-      const res = await apiClient.get<any[]>('/payment/transactions');
-      const list = res.data;
-      if (Array.isArray(list)) {
-        const mapped: WalletTransaction[] = list.map((item) => ({
-          id: item.id || `tx-${item.orderCode}`,
-          transactionId: `TXN-${item.orderCode}`,
-          date: item.createdAt ? item.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
-          method: item.method || 'QR',
-          amount: item.amountVnd || (item.amountUsd ? Math.round(item.amountUsd * USD_TO_VND_RATE) : 50000),
-          status: item.status === 'SUCCESS' ? 'Success' : item.status === 'PENDING' ? 'Pending' : 'Failed',
-          provider: item.method === 'Card' ? 'Credit Card' : 'PayOS VietQR',
-          note: item.transferNote || item.description,
-        }));
-        transactionList = mapped;
-        return mapped;
-      }
-    } catch {
-      // In case of network error, return cached transactions
+    const res = await apiClient.get<PaymentTransactionApiResponse[]>('/payment/transactions');
+    const list = res.data;
+    if (Array.isArray(list)) {
+      const mapped: WalletTransaction[] = list.map((item) => ({
+        id: item.id || `tx-${item.orderCode}`,
+        transactionId: `TXN-${item.orderCode}`,
+        date: item.createdAt ? item.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+        method: item.method || 'QR',
+        amount: item.amountVnd || (item.amountUsd ? Math.round(item.amountUsd * USD_TO_VND_RATE) : 50000),
+        status: item.status === 'SUCCESS' ? 'Success' : item.status === 'PENDING' ? 'Pending' : 'Failed',
+        provider: item.method === 'Card' ? 'Credit Card' : 'PayOS VietQR',
+        note: item.transferNote || item.description,
+      }));
+      return mapped;
     }
-    return [...transactionList];
+    throw new Error('Dữ liệu lịch sử giao dịch không hợp lệ.');
   },
 
   async checkPaymentStatus(orderCode: number): Promise<PaymentStatusResponse> {
@@ -80,15 +82,8 @@ export const walletService = {
         }
       }
       return data;
-    } catch (err: any) {
-      return {
-        orderCode,
-        status: 'PENDING',
-        amountVnd: 0,
-        isPaid: false,
-        balance: currentBalance,
-        message: err?.message || 'Không thể kết nối đến máy chủ',
-      };
+    } catch (error: unknown) {
+      throw new Error(getApiErrorMessage(error, 'Không thể kết nối đến máy chủ'));
     }
   },
 
@@ -103,19 +98,15 @@ export const walletService = {
         }
       }
       return data;
-    } catch (err: any) {
-      return {
-        orderCode: 0,
-        status: 'PENDING',
-        amountVnd: 0,
-        isPaid: false,
-        balance: currentBalance,
-        message: err?.response?.data?.message || err?.message || 'Không tìm thấy giao dịch',
-      };
+    } catch (error: unknown) {
+      throw new Error(getApiErrorMessage(error, 'Không tìm thấy giao dịch'));
     }
   },
 
   async createPayOSPaymentLink(amountVnd: number, provider: EWalletProvider = 'PAYOS'): Promise<PayOSCheckoutData> {
+    if (provider !== 'PAYOS') {
+      throw new Error(`${provider} chưa được kết nối. Vui lòng chọn PayOS.`);
+    }
     try {
       const res = await apiClient.post<PaymentApiResponse>('/payment/create-payment-link', {
         amountVnd,
@@ -139,57 +130,23 @@ export const walletService = {
         };
       }
       throw new Error('Dữ liệu cổng thanh toán không hợp lệ.');
-    } catch (err: any) {
-      console.error('[WALLET_ERROR] Failed to create PayOS link via backend:', err);
-      throw new Error(err?.response?.data?.message || err?.message || 'Không thể tạo cổng thanh toán PayOS. Vui lòng thử lại.');
+    } catch (error: unknown) {
+      throw new Error(getApiErrorMessage(error, 'Không thể tạo cổng thanh toán PayOS. Vui lòng thử lại.'));
     }
   },
 
-  generateFallbackOrder(amountVnd: number, provider: EWalletProvider = 'PAYOS'): PayOSCheckoutData {
-    const orderCode = Number(String(Date.now()).slice(-6));
-    const transferNote = `GT${orderCode}`;
-    const bankBin = '970422'; // MBBank (VietQR standard)
-    const accountNumber = '0838939851';
-    const accountName = 'DO TRONG TIN';
-    
-    const qrUrl = `https://img.vietqr.io/image/${bankBin}-${accountNumber}-compact2.png?amount=${amountVnd}&addInfo=${encodeURIComponent(transferNote)}&accountName=${encodeURIComponent(accountName)}`;
-
-    return {
-      orderCode,
-      amountVnd,
-      amountUsd: Math.round((amountVnd / USD_TO_VND_RATE) * 100) / 100,
-      transferNote,
-      accountNumber,
-      accountName,
-      bankName: 'MBBank',
-      qrUrl,
-    };
-  },
-
-  async confirmDeposit(amountVnd: number, method: 'QR' | 'Card', orderCode?: number, note?: string): Promise<WalletTransaction> {
-    if (orderCode) {
-      try {
-        await apiClient.post(`/payment/simulate-success/${orderCode}`);
-      } catch {
-        // Fallback simulation
-      }
+  async confirmDeposit(orderCode: number): Promise<WalletTransaction> {
+    if (!orderCode) {
+      throw new Error('Không có mã giao dịch để xác nhận.');
     }
-
-    currentBalance += amountVnd;
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wallet:balance-updated', { detail: currentBalance }));
+    const simulation = await apiClient.post<{ success: boolean }>(`/payment/simulate-success/${orderCode}`);
+    if (!simulation.data?.success) {
+      throw new Error('Giao dịch không còn ở trạng thái chờ xử lý.');
     }
-    const newTx: WalletTransaction = {
-      id: `tx-${Date.now()}`,
-      transactionId: `TXN-${orderCode || Math.floor(1000 + Math.random() * 9000)}`,
-      date: new Date().toISOString().split('T')[0],
-      method,
-      amount: amountVnd,
-      status: 'Success',
-      provider: method === 'QR' ? 'PayOS VietQR' : 'Credit Card',
-      note,
-    };
-    transactionList = [newTx, ...transactionList];
-    return newTx;
+    const transactions = await this.getTransactions();
+    const confirmed = transactions.find(item => item.transactionId === `TXN-${orderCode}` && item.status === 'Success');
+    if (!confirmed) throw new Error('Backend chưa xác nhận giao dịch thành công.');
+    await this.getBalance();
+    return confirmed;
   },
 };

@@ -26,14 +26,17 @@ export const VoiceLoungesSection: React.FC = () => {
     setSearchQuery,
     totalPlayersOnline,
     loading,
+    error,
     isCreateModalOpen,
     setIsCreateModalOpen,
     handleCreateRoom,
+    refreshRooms,
   } = useVoiceRooms();
 
   // Automatically join target room if coming from AI Recommendation or Squad Finder with ?joinRoom=...
   useEffect(() => {
-    if (joinRoomParam && !hasAutoJoined && rooms.length > 0) {
+    if (!joinRoomParam || hasAutoJoined || rooms.length === 0) return;
+    const timeout = window.setTimeout(() => {
       const match = rooms.find(
         r => r.id.toLowerCase() === joinRoomParam.toLowerCase() ||
              r.name.toLowerCase().includes(joinRoomParam.toLowerCase())
@@ -43,7 +46,8 @@ export const VoiceLoungesSection: React.FC = () => {
         setActiveJoinedRoom(match);
         setHasAutoJoined(true);
       }
-    }
+    }, 0);
+    return () => window.clearTimeout(timeout);
   }, [joinRoomParam, hasAutoJoined, rooms]);
 
   // If user is currently in a room, render the inside room view (Screenshot 2)
@@ -96,6 +100,15 @@ export const VoiceLoungesSection: React.FC = () => {
         onSearchChange={setSearchQuery}
         onCreateRoomClick={() => setIsCreateModalOpen(true)}
       />
+
+      {error && (
+        <div role="alert" className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-rose-500/40 bg-rose-950/20 px-4 py-3 text-sm text-rose-300">
+          <span>{error}</span>
+          <button onClick={() => void refreshRooms()} className="shrink-0 rounded border border-rose-400/50 px-3 py-1 text-xs hover:bg-rose-500/10">
+            Thử lại
+          </button>
+        </div>
+      )}
 
       {/* Rooms Grid */}
       {loading ? (

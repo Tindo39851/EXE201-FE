@@ -37,8 +37,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     walletService.getBalance().then((bal) => setWalletBalance(bal));
-    const handleBalanceUpdate = (e: any) => {
-      if (typeof e.detail === 'number') setWalletBalance(e.detail);
+    const handleBalanceUpdate = (event: Event) => {
+      const balance = (event as CustomEvent<unknown>).detail;
+      if (typeof balance === 'number') setWalletBalance(balance);
       else walletService.getBalance().then((bal) => setWalletBalance(bal));
     };
     window.addEventListener('wallet:balance-updated', handleBalanceUpdate);
