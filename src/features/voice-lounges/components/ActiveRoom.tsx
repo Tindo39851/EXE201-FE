@@ -162,7 +162,8 @@ export const ActiveRoom: React.FC<ActiveRoomProps> = ({ initialRoom, onLeave }) 
   useEffect(() => {
     let cancelled = false;
     if (authLoading || !user) return;
-    voiceService.createVoiceToken(initialRoom.id)
+    voiceService.joinRoom(initialRoom.id, { id: user.id, username: user.username })
+      .then(() => voiceService.createVoiceToken(initialRoom.id))
       .then(result => {
         if (!cancelled) setCredentials(result);
       })

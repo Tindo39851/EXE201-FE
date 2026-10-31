@@ -19,6 +19,11 @@ async function login(page: Page, username: string, password: string) {
     data: { emailOrUsername: username, password },
   });
   expect(response.ok(), `login failed for ${username}: ${await response.text()}`).toBeTruthy();
+  const payload = await response.json() as { data: { accessToken: string; refreshToken: string } };
+  await page.addInitScript(({ accessToken, refreshToken }) => {
+    localStorage.setItem('gametrust_token', accessToken);
+    localStorage.setItem('gametrust_refresh_token', refreshToken);
+  }, payload.data);
 }
 
 async function expectRoutesHealthy(page: Page, routes: string[]) {

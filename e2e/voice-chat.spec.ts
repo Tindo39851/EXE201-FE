@@ -3,7 +3,7 @@ import { expect, Page, test } from '@playwright/test';
 const API_URL = 'http://localhost:5000/api';
 
 interface LoginPayload {
-  data: { user: { id: string } };
+  data: { accessToken: string; refreshToken: string; user: { id: string } };
 }
 
 interface VoiceTokenPayload {
@@ -16,6 +16,10 @@ async function login(page: Page, username: string, password: string): Promise<st
   });
   expect(response.ok(), `login failed for ${username}: ${await response.text()}`).toBeTruthy();
   const payload = await response.json() as LoginPayload;
+  await page.addInitScript(({ accessToken, refreshToken }) => {
+    localStorage.setItem('gametrust_token', accessToken);
+    localStorage.setItem('gametrust_refresh_token', refreshToken);
+  }, payload.data);
   await page.goto('/voice-lounges');
   await expect(page.getByRole('button', { name: 'JOIN ROOM' }).first()).toBeVisible();
   return payload.data.user.id;

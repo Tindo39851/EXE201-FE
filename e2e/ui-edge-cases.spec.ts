@@ -7,6 +7,11 @@ async function loginByApi(page: Page, username = 'demo', password = 'Demo123!') 
     data: { emailOrUsername: username, password },
   });
   expect(response.status(), await response.text()).toBe(200);
+  const payload = await response.json() as { data: { accessToken: string; refreshToken: string } };
+  await page.addInitScript(({ accessToken, refreshToken }) => {
+    localStorage.setItem('gametrust_token', accessToken);
+    localStorage.setItem('gametrust_refresh_token', refreshToken);
+  }, payload.data);
 }
 
 test('login modal handles invalid credentials, registration validation, success and logout', async ({ page }) => {
