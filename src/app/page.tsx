@@ -28,7 +28,7 @@ export default function Home() {
       </section>
 
       {/* Feature 2 & 3: Tournament Hub + Clan Hub (Side by Side) */}
-      <section id="social-feed" className="scroll-mt-20 px-4 md:px-8 lg:px-16 py-16 border-t border-gt-border">
+      <section className="px-4 md:px-8 lg:px-16 py-16 border-t border-gt-border">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
           <TournamentHubSection />
           <ClanHubSection />
@@ -41,7 +41,7 @@ export default function Home() {
       </section>
 
       {/* Feature 5: Social Feed Network */}
-      <section className="px-4 md:px-8 lg:px-16 py-16 border-t border-gt-border">
+      <section id="social-feed" className="scroll-mt-20 px-4 md:px-8 lg:px-16 py-16 border-t border-gt-border">
         <div className="max-w-7xl mx-auto">
           <SocialFeedSection />
         </div>
