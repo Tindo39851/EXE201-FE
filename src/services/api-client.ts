@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import type { ApiError } from '@/types';
 
 export function getApiErrorMessage(error: unknown, fallback: string): string {
@@ -39,6 +39,29 @@ export const tokenStorage = {
   },
 };
 
+type RetryableRequest = InternalAxiosRequestConfig & { _authRetry?: boolean };
+type AuthTokenResponse = { accessToken: string; refreshToken: string };
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = tokenStorage.getRefreshToken();
+  if (!refreshToken) return null;
+
+  try {
+    const response = await axios.post<{ data?: AuthTokenResponse }>(
+      `${baseURL}/auth/refresh`,
+      { refreshToken },
+      { withCredentials: true, timeout: 15000 },
+    );
+    const tokens = response.data?.data;
+    if (!tokens?.accessToken || !tokens.refreshToken) return null;
+    tokenStorage.setTokens(tokens.accessToken, tokens.refreshToken);
+    return tokens.accessToken;
+  } catch {
+    return null;
+  }
+}
+
 export const apiClient: AxiosInstance = axios.create({
   baseURL,
   timeout: 15000,
@@ -75,7 +98,25 @@ apiClient.interceptors.response.use(
     }
     return response;
   },
-  (error: AxiosError<ApiError>) => {
+  async (error: AxiosError<ApiError>) => {
+    const originalRequest = error.config as RetryableRequest | undefined;
+    const requestUrl = originalRequest?.url || '';
+    const isAuthRequest = /\/auth\/(login|register|direct-register|verify-registration-otp|send-registration-otp|refresh|refresh-token|logout)/.test(requestUrl);
+
+    if (error.response?.status === 401 && originalRequest && !isAuthRequest) {
+      if (!originalRequest._authRetry) {
+        originalRequest._authRetry = true;
+        refreshInFlight ??= refreshAccessToken().finally(() => { refreshInFlight = null; });
+        const newAccessToken = await refreshInFlight;
+        if (newAccessToken) {
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return apiClient(originalRequest);
+        }
+      }
+      tokenStorage.clear();
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+    }
+
     const customError: ApiError = {
       statusCode: error.response?.status || 500,
       message:
@@ -84,10 +125,6 @@ apiClient.interceptors.response.use(
         'An unexpected error occurred',
       errors: error.response?.data?.errors,
     };
-
-    if (customError.statusCode === 401 && typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-    }
 
     return Promise.reject(customError);
   }
