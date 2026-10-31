@@ -44,6 +44,7 @@ export default function Navbar() {
     { name: 'Tournament', href: '/tournament' },
     { name: 'Clan', href: '/clan' },
     { name: 'Reputation', href: '/reputation' },
+    { name: 'Social Feed', href: '/#social-feed' },
     ...(user?.role === 'ADMIN' ? [{ name: '⚡ Admin Console', href: '/admin' }] : []),
   ];
 
@@ -94,7 +95,8 @@ export default function Navbar() {
           {/* Center: Navigation Links */}
           <div className="hidden md:flex items-center gap-0.5 2xl:gap-2">
             {navLinks.map((link) => {
-              const isActive = pathname === link.href;
+              const isSocialFeed = link.href === '/#social-feed';
+              const isActive = isSocialFeed ? pathname === '/' : pathname === link.href;
               return (
                 <Link
                   key={link.href}
