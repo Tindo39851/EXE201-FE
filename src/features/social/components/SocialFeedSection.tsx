@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Heart, MessageSquare, Share2, Radio, TrendingUp, Send, Trash2 } from 'lucide-react';
 import { useSocialFeed } from '../hooks/useSocialFeed';
 import { socialService } from '../services/social.service';
@@ -33,6 +33,34 @@ export const SocialFeedSection: React.FC = () => {
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [loadingComments, setLoadingComments] = useState<string | number | null>(null);
   const [postingComment, setPostingComment] = useState<string | number | null>(null);
+
+  useEffect(() => {
+    if (openComments === null) return;
+    let cancelled = false;
+    const refreshComments = async () => {
+      try {
+        const comments = await socialService.getComments(openComments);
+        if (!cancelled) {
+          setCommentsByPost(prev => ({ ...prev, [String(openComments)]: comments }));
+        }
+      } catch {
+        // Keep the last successfully loaded comments if polling briefly fails.
+      }
+    };
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void refreshComments();
+    }, 30000);
+    const onSocialUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<{ postId?: string }>).detail;
+      if (!detail?.postId || detail.postId === String(openComments)) void refreshComments();
+    };
+    window.addEventListener('social:updated', onSocialUpdate);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener('social:updated', onSocialUpdate);
+    };
+  }, [openComments]);
 
   const handleBroadcastSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { Orbitron, Rajdhani, Share_Tech_Mono } from "next/font/google";
+import { Exo_2, Be_Vietnam_Pro, Share_Tech_Mono } from "next/font/google";
 import "./globals.css";
 import "@livekit/components-styles";
 
-const orbitron = Orbitron({
-  subsets: ["latin"],
+const exo2 = Exo_2({
+  subsets: ["latin", "vietnamese"],
   variable: "--font-orbitron",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const rajdhani = Rajdhani({
-  subsets: ["latin"],
+const beVietnamPro = Be_Vietnam_Pro({
+  subsets: ["latin", "vietnamese"],
   variable: "--font-rajdhani",
   weight: ["300", "400", "500", "600", "700"],
 });
@@ -36,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="vi" data-scroll-behavior="smooth">
       <body
-        className={`${orbitron.variable} ${rajdhani.variable} ${shareTechMono.variable} bg-gt-bg text-gt-text font-rajdhani antialiased`}
+        className={`${exo2.variable} ${beVietnamPro.variable} ${shareTechMono.variable} bg-gt-bg text-gt-text font-rajdhani antialiased`}
       >
         <AuthProvider>{children}</AuthProvider>
       </body>

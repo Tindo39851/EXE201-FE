@@ -15,8 +15,8 @@ export function useSocialFeed() {
   const [feedError, setFeedError] = useState<string | null>(null);
   const [pendingLikeIds, setPendingLikeIds] = useState<Set<string | number>>(() => new Set());
 
-  const loadFeed = useCallback(async () => {
-    setIsLoading(true);
+  const loadFeed = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     setFeedError(null);
     try {
       const feedPosts = await socialService.getPosts(activeTab === 'ALL' ? undefined : activeTab);
@@ -27,17 +27,44 @@ export function useSocialFeed() {
       setOnlinePlayers(players.status === 'fulfilled' ? players.value : []);
       setTrendingTags(tags.status === 'fulfilled' ? tags.value : []);
     } catch (error: unknown) {
-      setPosts([]);
+      if (!silent) setPosts([]);
       setFeedError(getApiErrorMessage(error, 'Could not load the community feed'));
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [activeTab]);
 
   useEffect(() => {
-    // Refresh whenever the selected feed category changes.
+    // Load once, then receive social changes over SSE. Keep a low-frequency
+    // polling fallback for proxies or deployments that interrupt long streams.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFeed();
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    const eventSource = new EventSource(`${apiBase.replace(/\/$/, '')}/social/events`, { withCredentials: true });
+    eventSource.addEventListener('social-update', (event) => {
+      const message = event as MessageEvent<string>;
+      try {
+        const detail = JSON.parse(message.data) as { type?: string; postId?: string };
+        window.dispatchEvent(new CustomEvent('social:updated', { detail }));
+      } catch {
+        // Still refresh the feed if an event arrives with an unexpected payload.
+      }
+      void loadFeed(true);
+    });
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void loadFeed(true);
+    }, 30000);
+    const refreshOnFocus = () => {
+      if (document.visibilityState === 'visible') void loadFeed(true);
+    };
+    document.addEventListener('visibilitychange', refreshOnFocus);
+    window.addEventListener('focus', refreshOnFocus);
+    return () => {
+      eventSource.close();
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshOnFocus);
+      window.removeEventListener('focus', refreshOnFocus);
+    };
   }, [loadFeed]);
 
   const toggleLike = async (postId: string | number) => {
