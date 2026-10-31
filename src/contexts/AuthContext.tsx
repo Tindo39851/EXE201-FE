@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { apiClient } from '@/services/api-client';
+import { apiClient, tokenStorage } from '@/services/api-client';
 import type { AuthPayload, AuthUser } from '@/types';
 
 interface AuthContextType {
@@ -29,15 +29,28 @@ const AuthContext = createContext<AuthContextType>({
 const unwrapAuthUser = (payload: AuthPayload): AuthUser =>
   'user' in payload ? payload.user : payload;
 
+const saveAuthTokens = (payload: AuthPayload) => {
+  if ('user' in payload && payload.accessToken && payload.refreshToken) {
+    tokenStorage.setTokens(payload.accessToken, payload.refreshToken);
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCurrentUser = useCallback(async () => {
+    // Do not fire an unauthenticated /me request on a fresh visit. Its late 401
+    // could otherwise arrive after login and clear the newly established session.
+    if (!tokenStorage.getAccessToken()) {
+      setLoading(false);
+      return;
+    }
     try {
       const response = await apiClient.get<AuthUser>('/auth/me');
       setUser(response.data);
     } catch {
+      tokenStorage.clear();
       setUser(null);
     } finally {
       setLoading(false);
@@ -49,13 +62,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCurrentUser();
 
-    const handleUnauthorized = () => setUser(null);
+    const handleUnauthorized = () => {
+      tokenStorage.clear();
+      setUser(null);
+    };
     window.addEventListener('auth:unauthorized', handleUnauthorized);
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, [fetchCurrentUser]);
 
   const login = async (emailOrUsername: string, password: string): Promise<AuthUser> => {
     const res = await apiClient.post<AuthPayload>('/auth/login', { emailOrUsername, password });
+    saveAuthTokens(res.data);
     const userData = unwrapAuthUser(res.data);
     setUser(userData);
     return userData;
@@ -63,6 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (username: string, email: string, password: string) => {
     const res = await apiClient.post<AuthPayload>('/auth/register', { username, email, password });
+    saveAuthTokens(res.data);
     setUser(unwrapAuthUser(res.data));
   };
 
@@ -72,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyRegistrationOtp = async (username: string, email: string, password: string, otp: string) => {
     const res = await apiClient.post<AuthPayload>('/auth/verify-registration-otp', { username, email, password, otp });
+    saveAuthTokens(res.data);
     setUser(unwrapAuthUser(res.data));
   };
 
@@ -79,6 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await apiClient.post('/auth/logout');
     } finally {
+      tokenStorage.clear();
       setUser(null);
     }
   };
