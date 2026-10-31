@@ -21,6 +21,8 @@ interface ApiChannel {
   type: 'TEXT' | 'VOICE';
   locked?: boolean;
   capacity?: number;
+  rankRequirement?: string;
+  playMode?: string;
   onlineCount?: number;
   members?: ApiVoiceMember[];
   ownerId?: string;
@@ -388,6 +390,8 @@ export const voiceService = {
     const res = await apiClient.post<ApiChannel>(`/community/games/${dto.gameId}/rooms`, {
       name: dto.name,
       capacity: dto.capacity,
+      rankRequirement: dto.rankRequirement,
+      playMode: dto.playMode,
     });
     const c = res.data;
     const newRoom: VoiceRoom = {
@@ -396,8 +400,8 @@ export const voiceService = {
       gameName: dto.gameId.replace(/-/g, ' ').toUpperCase(),
       name: c.name,
       tag: dto.tag || dto.rankRequirement || 'Casual',
-      rankRequirement: dto.rankRequirement,
-      playMode: dto.playMode,
+      rankRequirement: c.rankRequirement || dto.rankRequirement,
+      playMode: c.playMode || dto.playMode,
       visibility: dto.visibility || 'Public',
       ping: 20,
       capacity: dto.capacity,

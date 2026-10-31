@@ -37,10 +37,7 @@ export const VoiceLoungesSection: React.FC = () => {
   useEffect(() => {
     if (!joinRoomParam || hasAutoJoined || rooms.length === 0) return;
     const timeout = window.setTimeout(() => {
-      const match = rooms.find(
-        r => r.id.toLowerCase() === joinRoomParam.toLowerCase() ||
-             r.name.toLowerCase().includes(joinRoomParam.toLowerCase())
-      ) || rooms[0];
+      const match = rooms.find(r => r.id.toLowerCase() === joinRoomParam.toLowerCase());
 
       if (match) {
         setActiveJoinedRoom(match);

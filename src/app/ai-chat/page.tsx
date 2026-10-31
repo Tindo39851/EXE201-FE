@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import {
   Bot,
   Loader2,
@@ -76,7 +77,7 @@ export default function AiChatPage() {
       const response = await aiChatService.chat(conversation);
       setMessages((current) => [
         ...current,
-        { role: 'assistant' as const, content: response.reply },
+        { role: 'assistant' as const, content: response.reply, recommendations: response.recommendations ?? [] },
       ].slice(-20));
       setStatus({ configured: true, model: response.model });
     } catch (requestError) {
@@ -196,6 +197,23 @@ export default function AiChatPage() {
                         )}
                       </div>
                     ))}
+
+                    {messages.flatMap((message, index) => message.recommendations?.length ? [
+                      <div key={`rooms-${index}`} className="ml-11 grid gap-3 sm:grid-cols-2">
+                        {message.recommendations.map((room) => (
+                          <article key={room.id} className="rounded-sm border border-gt-cyan/30 bg-gt-cyan/5 p-3 text-sm">
+                            <div className="font-orbitron font-bold text-white">{room.roomName}</div>
+                            <div className="mt-1 text-gt-text-dim">{room.gameName} · {room.rankRequirement} · {room.playMode}</div>
+                            <div className="mt-1 font-mono text-xs text-gt-green">
+                              {room.onlineCount}/{room.capacity} người · còn {room.availableSlots} chỗ
+                            </div>
+                            <Link href={room.joinUrl} className="mt-3 inline-flex rounded-sm bg-gt-cyan px-3 py-2 font-mono text-xs font-bold text-black hover:brightness-110">
+                              VÀO PHÒNG
+                            </Link>
+                          </article>
+                        ))}
+                      </div>,
+                    ] : [])}
 
                     {sending && (
                       <div className="flex items-center gap-3 text-gt-text-dim">
