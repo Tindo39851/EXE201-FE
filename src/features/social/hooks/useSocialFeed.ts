@@ -12,18 +12,23 @@ export function useSocialFeed() {
   const [trendingTags, setTrendingTags] = useState<TrendingTag[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isPosting, setIsPosting] = useState<boolean>(false);
+  const [feedError, setFeedError] = useState<string | null>(null);
+  const [pendingLikeIds, setPendingLikeIds] = useState<Set<string | number>>(() => new Set());
 
   const loadFeed = useCallback(async () => {
     setIsLoading(true);
+    setFeedError(null);
     try {
-      const [feedPosts, players, tags] = await Promise.all([
-        socialService.getPosts(activeTab === 'ALL' ? undefined : activeTab),
-        socialService.getOnlinePlayers(),
-        socialService.getTrendingTags(),
-      ]);
+      const feedPosts = await socialService.getPosts(activeTab === 'ALL' ? undefined : activeTab);
       setPosts(feedPosts);
-      setOnlinePlayers(players);
-      setTrendingTags(tags);
+      const [players, tags] = await Promise.allSettled([
+        socialService.getOnlinePlayers(), socialService.getTrendingTags(),
+      ]);
+      setOnlinePlayers(players.status === 'fulfilled' ? players.value : []);
+      setTrendingTags(tags.status === 'fulfilled' ? tags.value : []);
+    } catch (error: unknown) {
+      setPosts([]);
+      setFeedError(getApiErrorMessage(error, 'Could not load the community feed'));
     } finally {
       setIsLoading(false);
     }
@@ -36,30 +41,31 @@ export function useSocialFeed() {
   }, [loadFeed]);
 
   const toggleLike = async (postId: string | number) => {
-    setPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        return {
-          ...p,
-          liked: !p.liked,
-          likes: p.liked ? p.likes - 1 : p.likes + 1,
-        };
-      }
-      return p;
-    }));
-
+    const post = posts.find(item => item.id === postId);
+    if (!post || pendingLikeIds.has(postId)) return;
+    setPendingLikeIds(prev => new Set(prev).add(postId));
     try {
-      await socialService.toggleLikePost(postId);
-    } catch {
-      setPosts(prev => prev.map(p => {
-        if (p.id === postId) {
-          return {
-            ...p,
-            liked: !p.liked,
-            likes: p.liked ? p.likes - 1 : p.likes + 1,
-          };
-        }
-        return p;
-      }));
+      const result = await socialService.setPostLike(postId, !post.liked);
+      setPosts(prev => prev.map(post => post.id === postId
+        ? { ...post, liked: result.liked, likes: result.count }
+        : post));
+    } catch (error: unknown) {
+      alert(getApiErrorMessage(error, 'Could not update like'));
+    } finally {
+      setPendingLikeIds(prev => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
+    }
+  };
+
+  const deletePost = async (postId: string | number) => {
+    try {
+      await socialService.deletePost(postId);
+      setPosts(prev => prev.filter(post => post.id !== postId));
+    } catch (error: unknown) {
+      alert(getApiErrorMessage(error, 'Could not delete post'));
     }
   };
 
@@ -83,8 +89,11 @@ export function useSocialFeed() {
     activeTab,
     isLoading,
     isPosting,
+    feedError,
+    pendingLikeIds,
     setActiveTab,
     toggleLike,
+    deletePost,
     createBroadcast,
     refetch: loadFeed,
   };

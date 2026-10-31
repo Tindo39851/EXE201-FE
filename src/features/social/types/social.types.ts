@@ -1,5 +1,6 @@
 export interface SocialPost {
   id: string | number;
+  authorId?: string;
   username: string;
   initial: string;
   avatarColor: string;
@@ -13,6 +14,15 @@ export interface SocialPost {
   liked: boolean;
   comments: number;
   bottomGradient: string;
+}
+
+export interface SocialComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  username: string;
+  content: string;
+  createdAt: string;
 }
 
 export interface OnlinePlayer {
