@@ -29,6 +29,10 @@ interface ApiChannel {
   ownerUsername?: string;
   isDefault?: boolean;
   createdAt?: string;
+  tag?: string;
+  visibility?: VoiceRoom['visibility'];
+  personalityTags?: VoiceRoom['personalityTags'];
+  description?: string;
 }
 
 interface ApiGameHub {
@@ -287,8 +291,12 @@ export const voiceService = {
               gameId: c.gameId || gameId,
               gameName: c.gameId ? c.gameId.replace(/-/g, ' ').toUpperCase() : 'GAME HUB',
               name: c.name,
-              tag: 'Casual',
-              visibility: c.locked ? 'Clan Only' : 'Public',
+              tag: c.tag || c.rankRequirement || 'Casual',
+              rankRequirement: c.rankRequirement,
+              playMode: c.playMode,
+              personalityTags: c.personalityTags || [],
+              description: c.description,
+              visibility: c.visibility || (c.locked ? 'Clan Only' : 'Public'),
               ping: Math.floor(Math.random() * 20) + 15,
               capacity: c.capacity || 10,
               onlineCount: c.onlineCount || (c.members ? c.members.length : 0),
@@ -322,8 +330,12 @@ export const voiceService = {
                 gameId: g.id,
                 gameName: g.name,
                 name: c.name,
-                tag: 'Casual',
-                visibility: c.locked ? 'Clan Only' : 'Public',
+                tag: c.tag || c.rankRequirement || 'Casual',
+                rankRequirement: c.rankRequirement,
+                playMode: c.playMode,
+                personalityTags: c.personalityTags || [],
+                description: c.description,
+                visibility: c.visibility || (c.locked ? 'Clan Only' : 'Public'),
                 ping: Math.floor(Math.random() * 20) + 15,
                 capacity: c.capacity || 10,
                 onlineCount: c.onlineCount || 0,
@@ -361,8 +373,12 @@ export const voiceService = {
           gameId: c.gameId || 'league-of-legends',
           gameName: c.gameId ? c.gameId.replace(/-/g, ' ') : 'League of Legends',
           name: c.name,
-          tag: 'Diamond Rank',
-          visibility: c.locked ? 'Clan Only' : 'Public',
+          tag: c.tag || c.rankRequirement || 'Casual',
+          rankRequirement: c.rankRequirement,
+          playMode: c.playMode,
+          personalityTags: c.personalityTags || [],
+          description: c.description,
+          visibility: c.visibility || (c.locked ? 'Clan Only' : 'Public'),
           ping: 28,
           capacity: c.capacity || 10,
           onlineCount: c.onlineCount || (c.members ? c.members.length : 0),
@@ -390,8 +406,12 @@ export const voiceService = {
     const res = await apiClient.post<ApiChannel>(`/community/games/${dto.gameId}/rooms`, {
       name: dto.name,
       capacity: dto.capacity,
+      tag: dto.tag,
       rankRequirement: dto.rankRequirement,
       playMode: dto.playMode,
+      visibility: dto.visibility,
+      personalityTags: dto.personalityTags,
+      description: dto.description,
     });
     const c = res.data;
     const newRoom: VoiceRoom = {
@@ -403,6 +423,8 @@ export const voiceService = {
       rankRequirement: c.rankRequirement || dto.rankRequirement,
       playMode: c.playMode || dto.playMode,
       visibility: dto.visibility || 'Public',
+      personalityTags: c.personalityTags || dto.personalityTags || [],
+      description: c.description || dto.description,
       ping: 20,
       capacity: dto.capacity,
       onlineCount: 0,

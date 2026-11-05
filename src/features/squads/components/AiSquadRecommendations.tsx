@@ -12,6 +12,8 @@ import {
   ArrowRight,
   CheckCircle2,
   RefreshCw,
+  Search,
+  X,
 } from 'lucide-react';
 import { apiClient } from '@/services/api-client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +32,10 @@ interface AiRecommendation {
   slotsAvailable: string;
   voiceStatus: string;
   aiReason: string;
+  description?: string;
+  personalityTags?: string[];
+  preferenceMatchScore?: number;
+  matchedTraits?: string[];
 }
 
 interface AiResponseData {
@@ -41,6 +47,7 @@ interface AiResponseData {
   aiEngine?: string;
   analyzedRoomsCount?: number;
   emptyMessage?: string;
+  requestedPreference?: string;
   recommendations?: AiRecommendation[];
 }
 
@@ -55,13 +62,18 @@ export const AiSquadRecommendations: React.FC<AiSquadRecommendationsProps> = ({
   const [data, setData] = useState<AiResponseData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [premiumModalOpen, setPremiumModalOpen] = useState<boolean>(false);
+  const [preference, setPreference] = useState('');
+  const [appliedPreference, setAppliedPreference] = useState('');
 
   const fetchRecommendations = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get<AiResponseData>(
-        `/squads/ai-recommendations?game=${encodeURIComponent(activeGame)}`
-      );
+      const res = await apiClient.get<AiResponseData>('/squads/ai-recommendations', {
+        params: {
+          game: activeGame,
+          ...(appliedPreference ? { preference: appliedPreference } : {}),
+        },
+      });
       setData(res.data);
     } catch {
       // In case of error or unauthenticated, mock locked state
@@ -80,7 +92,7 @@ export const AiSquadRecommendations: React.FC<AiSquadRecommendationsProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [activeGame]);
+  }, [activeGame, appliedPreference]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void fetchRecommendations(), 0);
@@ -88,6 +100,22 @@ export const AiSquadRecommendations: React.FC<AiSquadRecommendationsProps> = ({
   }, [fetchRecommendations, user]);
 
   const isUnlocked = Boolean(data?.unlocked || user?.isPremium);
+
+  const handlePreferenceSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextPreference = preference.trim();
+    if (!nextPreference || !isUnlocked) return;
+    if (nextPreference === appliedPreference) {
+      void fetchRecommendations();
+      return;
+    }
+    setAppliedPreference(nextPreference);
+  };
+
+  const clearPreference = () => {
+    setPreference('');
+    setAppliedPreference('');
+  };
 
   return (
     <>
@@ -140,6 +168,59 @@ export const AiSquadRecommendations: React.FC<AiSquadRecommendationsProps> = ({
           </div>
         </div>
 
+        <form
+          onSubmit={handlePreferenceSearch}
+          className={`mt-5 rounded-sm border p-4 ${
+            isUnlocked
+              ? 'border-yellow-400/40 bg-yellow-400/5'
+              : 'border-gt-border bg-black/20 opacity-60'
+          }`}
+        >
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <label htmlFor="ai-room-preference" className="flex items-center gap-2 font-orbitron text-xs font-bold text-white uppercase tracking-wider">
+              <Search size={14} className="text-yellow-400" />
+              Mô tả phòng bạn muốn tìm
+            </label>
+            <span className="font-mono text-[10px] text-gt-text-dim">{preference.length}/300</span>
+          </div>
+          <div className="flex flex-col gap-3 md:flex-row">
+            <textarea
+              id="ai-room-preference"
+              value={preference}
+              onChange={(event) => setPreference(event.target.value.slice(0, 300))}
+              placeholder="Ví dụ: Phòng vui vẻ, có mic, nói nhiều, không toxic, đánh rank nghiêm túc..."
+              rows={2}
+              maxLength={300}
+              disabled={!isUnlocked || loading}
+              className="min-h-[64px] flex-1 resize-none rounded-sm border border-gt-border bg-[#080D15] px-3 py-2.5 text-sm text-white outline-none transition focus:border-yellow-400 placeholder:text-gt-text-dim disabled:cursor-not-allowed"
+            />
+            <div className="flex gap-2 md:flex-col">
+              <button
+                type="submit"
+                disabled={!isUnlocked || loading || !preference.trim()}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-sm bg-gradient-to-r from-yellow-500 to-amber-400 px-5 py-2 font-orbitron text-xs font-black text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+              >
+                {loading ? <RefreshCw size={14} className="animate-spin" /> : <Search size={14} />}
+                AI TÌM PHÒNG
+              </button>
+              {appliedPreference && (
+                <button
+                  type="button"
+                  onClick={clearPreference}
+                  className="inline-flex items-center justify-center gap-1 rounded-sm border border-gt-border px-3 py-2 font-mono text-[10px] text-gt-text-dim transition hover:border-gt-red/60 hover:text-gt-red cursor-pointer"
+                >
+                  <X size={12} /> XÓA BỘ LỌC
+                </button>
+              )}
+            </div>
+          </div>
+          {appliedPreference && (
+            <p className="mt-2 font-mono text-[10px] text-yellow-300">
+              AI đang ưu tiên: “{data?.requestedPreference || appliedPreference}”
+            </p>
+          )}
+        </form>
+
         {/* Content Body */}
         {loading ? (
           <div className="py-12 text-center font-mono text-xs text-yellow-400 flex items-center justify-center gap-2">
@@ -150,7 +231,7 @@ export const AiSquadRecommendations: React.FC<AiSquadRecommendationsProps> = ({
           /* PREMIUM UNLOCKED: REAL AI RECOMMENDATIONS */
           <div className="mt-6 flex flex-col gap-4">
             <div className="flex items-center justify-between text-xs font-mono text-gt-text-dim">
-              <span>ĐÃ PHÂN TÍCH {data.analyzedRoomsCount || 42} PHÒNG HOẠT ĐỘNG • LỌC THEO FAIR-PLAY &amp; CHỐNG TROLL</span>
+              <span>ĐÃ PHÂN TÍCH {data.analyzedRoomsCount || 42} PHÒNG HOẠT ĐỘNG • LỌC THEO MÔ TẢ, FAIR-PLAY &amp; CHỐNG TROLL</span>
               <span className="text-yellow-400 flex items-center gap-1">
                 <CheckCircle2 size={13} /> {data.aiEngine || 'GameTrust Neural Matcher v2.1'}
               </span>
@@ -172,6 +253,19 @@ export const AiSquadRecommendations: React.FC<AiSquadRecommendationsProps> = ({
                         <ShieldCheck size={11} /> ANTI-FRAUD
                       </span>
                     </div>
+
+                    {appliedPreference && rec.preferenceMatchScore !== undefined && (
+                      <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
+                        <span className="rounded-full border border-gt-cyan/40 bg-gt-cyan/10 px-2 py-0.5 text-gt-cyan">
+                          KHỚP MÔ TẢ {rec.preferenceMatchScore}%
+                        </span>
+                        {rec.matchedTraits?.slice(0, 3).map((trait) => (
+                          <span key={trait} className="rounded-full border border-yellow-400/30 bg-yellow-400/10 px-2 py-0.5 text-yellow-200">
+                            {trait}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Room Name & Game */}
                     <div className="flex flex-col">

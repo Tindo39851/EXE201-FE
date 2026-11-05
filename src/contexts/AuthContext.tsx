@@ -66,8 +66,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       tokenStorage.clear();
       setUser(null);
     };
+    const handlePremiumUpdated = (event: Event) => {
+      const updatedUser = (event as CustomEvent<AuthUser>).detail;
+      if (updatedUser?.id) {
+        setUser(updatedUser);
+      } else {
+        void fetchCurrentUser();
+      }
+    };
     window.addEventListener('auth:unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    window.addEventListener('user:premium-updated', handlePremiumUpdated);
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+      window.removeEventListener('user:premium-updated', handlePremiumUpdated);
+    };
   }, [fetchCurrentUser]);
 
   const login = async (emailOrUsername: string, password: string): Promise<AuthUser> => {

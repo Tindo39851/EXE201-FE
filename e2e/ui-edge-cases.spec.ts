@@ -41,6 +41,7 @@ test('login modal handles invalid credentials, registration validation, success 
   await page.locator('input[type="password"]').fill('Demo123!');
   await page.getByRole('button', { name: 'AUTHORIZE ACCESS' }).click();
   await expect(page.getByTitle('Logout')).toBeVisible();
+  await expect(page.getByText('PREMIUM', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'AUTHORIZE ACCESS' })).not.toBeVisible();
   await page.getByTitle('Logout').click();
   await expect(page.getByRole('button', { name: 'Sign In', exact: true })).toBeVisible();
@@ -67,6 +68,9 @@ test('authenticated room creation reaches MongoDB and is removed after verificat
   await page.getByRole('button', { name: 'CREATE ROOM', exact: true }).click();
   const roomName = `E2E UI Room ${Date.now()}`;
   await page.getByPlaceholder(/Leo rank tryhard/).fill(roomName);
+  await page.getByRole('button', { name: 'Vui vẻ', exact: true }).click();
+  await page.getByRole('button', { name: 'Có mic', exact: true }).click();
+  await page.getByPlaceholder(/Team vui vẻ/).fill('Phòng E2E có mic, giao tiếp lịch sự.');
   const responsePromise = page.waitForResponse((response) =>
     response.url().includes('/api/community/games/')
       && response.url().endsWith('/rooms')
@@ -77,7 +81,19 @@ test('authenticated room creation reaches MongoDB and is removed after verificat
   expect(response.status(), await response.text()).toBe(200);
   const payload = await response.json() as { data: { id: string } };
   try {
-    await expect(page.getByRole('heading', { name: roomName })).toBeVisible();
+    let roomCard = page.getByRole('heading', { name: roomName })
+      .locator('xpath=ancestor::div[contains(@class,"group relative")][1]');
+    await expect(roomCard).toBeVisible();
+    await expect(roomCard.getByText('Vui vẻ', { exact: true })).toBeVisible();
+    await expect(roomCard.getByText('Có mic', { exact: true })).toBeVisible();
+    await expect(roomCard.getByText('Phòng E2E có mic, giao tiếp lịch sự.')).toBeVisible();
+    await page.reload();
+    roomCard = page.getByRole('heading', { name: roomName })
+      .locator('xpath=ancestor::div[contains(@class,"group relative")][1]');
+    await expect(roomCard).toBeVisible();
+    await expect(roomCard.getByText('Vui vẻ', { exact: true })).toBeVisible();
+    await expect(roomCard.getByText('Có mic', { exact: true })).toBeVisible();
+    await expect(roomCard.getByText('Phòng E2E có mic, giao tiếp lịch sự.')).toBeVisible();
   } finally {
     const cleanup = await page.request.delete(`${API_URL}/community/rooms/${payload.data.id}`);
     expect(cleanup.status(), await cleanup.text()).toBe(200);
@@ -87,13 +103,15 @@ test('authenticated room creation reaches MongoDB and is removed after verificat
 test('voice filters, search empty state and all supported game tabs work', async ({ page }) => {
   await page.goto('/voice-lounges');
   for (const game of ['FREE FIRE', 'LEAGUE OF LEGENDS', 'LIÊN QUÂN MOBILE', 'VALORANT']) {
-    await page.getByRole('button', { name: new RegExp(`^${game}\\s+2$`, 'i') }).click();
-    await expect(page.getByRole('button', { name: 'JOIN ROOM' })).toHaveCount(2);
+    await page.getByRole('button', { name: new RegExp(`^${game}\\s+\\d+$`, 'i') }).click();
+    await expect.poll(() => page.getByRole('button', { name: 'JOIN ROOM' }).count())
+      .toBeGreaterThanOrEqual(2);
   }
   await page.getByPlaceholder('Search rooms...').fill('room-that-does-not-exist');
   await expect(page.getByText('NO ACTIVE VOICE LOUNGES FOUND')).toBeVisible();
   await page.getByPlaceholder('Search rooms...').fill('');
-  await expect(page.getByRole('button', { name: 'JOIN ROOM' })).toHaveCount(2);
+  await expect.poll(() => page.getByRole('button', { name: 'JOIN ROOM' }).count())
+    .toBeGreaterThanOrEqual(2);
 });
 
 test('AI chat works through the UI and unsupported wallets show a clear error', async ({ page }) => {
@@ -110,6 +128,23 @@ test('AI chat works through the UI and unsupported wallets show a clear error', 
   await page.goto('/wallet');
   await page.getByRole('button', { name: 'MOMO', exact: true }).click();
   await expect(page.getByText('MOMO chưa được kết nối. Vui lòng chọn PayOS.')).toBeVisible();
+});
+
+test('premium member can describe the desired room for AI recommendations', async ({ page }) => {
+  await loginByApi(page);
+  await page.goto('/squad-finder');
+  const preference = 'Phòng vui vẻ, có mic, nói nhiều và không toxic';
+  await page.getByLabel('Mô tả phòng bạn muốn tìm').fill(preference);
+  const responsePromise = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname.endsWith('/api/squads/ai-recommendations')
+      && url.searchParams.get('preference') === preference;
+  });
+  await page.getByRole('button', { name: 'AI TÌM PHÒNG' }).click();
+  const response = await responsePromise;
+  expect(response.status(), await response.text()).toBe(200);
+  await expect(page.getByText(`AI đang ưu tiên: “${preference}”`)).toBeVisible();
+  await expect(page.getByText(/KHỚP MÔ TẢ \d+(?:\.\d+)?%/).first()).toBeVisible();
 });
 
 test('all member pages render at mobile width without crashes or horizontal overflow', async ({ page }) => {

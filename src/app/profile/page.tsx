@@ -16,6 +16,7 @@ import {
   Sparkles,
   CheckCircle,
   Clock,
+  Crown,
 } from 'lucide-react';
 
 const AVATAR_PRESETS = [
@@ -158,9 +159,16 @@ export default function ProfilePage() {
                   <h2 className="font-orbitron text-2xl sm:text-3xl font-black text-white uppercase tracking-wider">
                     {user.username}
                   </h2>
-                  <span className="px-2.5 py-0.5 bg-gt-cyan/15 border border-gt-cyan/50 text-gt-cyan font-mono text-xs uppercase font-bold rounded-sm">
-                    {user.role}
-                  </span>
+                  {user.isPremium ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-yellow-400/15 border border-yellow-400/80 text-yellow-300 font-orbitron text-xs uppercase font-black rounded-sm shadow-[0_0_12px_rgba(250,204,21,0.35)]">
+                      <Crown size={13} className="text-yellow-400" />
+                      PREMIUM
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 bg-gt-cyan/15 border border-gt-cyan/50 text-gt-cyan font-mono text-xs uppercase font-bold rounded-sm">
+                      {user.role}
+                    </span>
+                  )}
                 </div>
 
                 <div className="font-mono text-xs text-gt-text-dim flex items-center gap-2">

@@ -3,8 +3,30 @@ import { APIRequestContext, expect, test } from '@playwright/test';
 const API_URL = 'http://localhost:5000/api';
 
 type Envelope<T> = { data: T };
-type AuthPayload = { accessToken: string; refreshToken: string; user: { id: string; role: string } };
-type CommunityItem = { id: string; type?: string; name?: string; members?: unknown[]; onlineCount?: number };
+type AuthPayload = {
+  accessToken: string;
+  refreshToken: string;
+  user: { id: string; role: string; isPremium?: boolean; premiumTier?: string };
+};
+type CommunityItem = {
+  id: string;
+  type?: string;
+  name?: string;
+  members?: unknown[];
+  onlineCount?: number;
+  personalityTags?: string[];
+  description?: string;
+  rankRequirement?: string;
+  playMode?: string;
+};
+type AiRoomRecommendationPayload = {
+  requestedPreference: string;
+  recommendations: Array<{
+    id: string;
+    preferenceMatchScore?: number;
+    matchedTraits?: string[];
+  }>;
+};
 
 type PlaywrightFixture = {
   request: { newContext(): Promise<APIRequestContext> };
@@ -54,6 +76,8 @@ test('authentication, token rotation and role protection cover success and failu
 
     const memberAuth = await login(member, 'demo', 'Demo123!');
     expect(memberAuth.user.role).toBe('MEMBER');
+    expect(memberAuth.user.isPremium).toBe(true);
+    expect(memberAuth.user.premiumTier).toBe('PREMIUM');
     await expectStatus(await member.get('/auth/me'), 200);
     await expectStatus(await member.get('/admin/users'), 403);
 
@@ -191,12 +215,47 @@ test('voice room lifecycle covers validation, locking, permissions, idempotency 
     await expectStatus(await member.post('/community/games/not-a-real-game/rooms', {
       data: { name: 'invalid game', capacity: 2 },
     }), 404);
+    await expectStatus(await member.post('/community/games/free-fire/rooms', {
+      data: {
+        name: 'too many personality tags',
+        capacity: 2,
+        personalityTags: ['Vui vẻ', 'Chill', 'Nói nhiều', 'Có mic', 'Tryhard', 'Ít nói'],
+      },
+    }), 400);
+    await expectStatus(await member.post('/community/games/free-fire/rooms', {
+      data: { name: 'unsupported personality', capacity: 2, personalityTags: ['Không hợp lệ'] },
+    }), 400);
 
     const created = await admin.post('/community/games/free-fire/rooms', {
-      data: { name: `E2E Room ${Date.now()}`, capacity: 2 },
+      data: {
+        name: `E2E Room ${Date.now()}`,
+        capacity: 2,
+        tag: 'Heroic',
+        rankRequirement: 'Heroic',
+        playMode: 'Booyah Tryhard',
+        visibility: 'Public',
+        personalityTags: ['Vui vẻ', 'Có mic'],
+        description: 'Phòng E2E có mic, giao tiếp lịch sự.',
+      },
     });
     await expectStatus(created, 200);
-    roomId = (await created.json() as Envelope<CommunityItem>).data.id;
+    const createdRoom = (await created.json() as Envelope<CommunityItem>).data;
+    roomId = createdRoom.id;
+    expect(createdRoom.personalityTags).toEqual(['Vui vẻ', 'Có mic']);
+    expect(createdRoom.description).toBe('Phòng E2E có mic, giao tiếp lịch sự.');
+    expect(createdRoom.rankRequirement).toBe('Heroic');
+    expect(createdRoom.playMode).toBe('Booyah Tryhard');
+
+    const wantedRoom = 'phòng vui vẻ có mic giao tiếp lịch sự';
+    const recommendations = await member.get(
+      `/squads/ai-recommendations?game=Free%20Fire&preference=${encodeURIComponent(wantedRoom)}`,
+    );
+    await expectStatus(recommendations, 200);
+    const recommendationData = (await recommendations.json() as Envelope<AiRoomRecommendationPayload>).data;
+    expect(recommendationData.requestedPreference).toBe(wantedRoom);
+    expect(recommendationData.recommendations[0]?.id).toBe(roomId);
+    expect(recommendationData.recommendations[0]?.preferenceMatchScore).toBeGreaterThan(0);
+    expect(recommendationData.recommendations[0]?.matchedTraits).toContain('Có mic');
 
     await expectStatus(await member.patch(`/community/rooms/${roomId}`, {
       data: { name: 'forbidden rename' },
@@ -220,6 +279,10 @@ test('voice room lifecycle covers validation, locking, permissions, idempotency 
     const roomData = (await room.json() as Envelope<CommunityItem>).data;
     expect(roomData.onlineCount).toBe(1);
     expect(roomData.members).toHaveLength(1);
+    expect(roomData.personalityTags).toEqual(['Vui vẻ', 'Có mic']);
+    expect(roomData.description).toBe('Phòng E2E có mic, giao tiếp lịch sự.');
+    expect(roomData.rankRequirement).toBe('Heroic');
+    expect(roomData.playMode).toBe('Booyah Tryhard');
 
     await expectStatus(await member.patch(`/community/rooms/${roomId}/members/${memberAuth.user.id}`, {
       data: { muted: true },
@@ -286,7 +349,7 @@ test('AI and remaining write endpoints reject unsafe or malformed requests', asy
       data: { amountVnd: 50_000_001 },
     }), 400);
     await expectStatus(await member.get('/payment/check-status/999999999999'), 404);
-    await expectStatus(await member.post('/payment/simulate-success/999999999999'), 404);
+    await expectStatus(await member.post('/payment/simulate-success/999999999999'), 400);
     await expectStatus(await member.post('/squads/matchmake', { data: {} }), 400);
     await expectStatus(await member.post('/social/posts', { data: { content: ' ' } }), 400);
     await expectStatus(await member.post('/reputation/reviews', { data: {} }), 400);

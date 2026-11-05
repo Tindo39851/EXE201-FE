@@ -4,7 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Bot,
+  Crown,
   Loader2,
+  LockKeyhole,
   Send,
   ShieldCheck,
   Sparkles,
@@ -13,6 +15,7 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { PremiumModal } from '@/components/ui/PremiumModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { getApiErrorMessage } from '@/services/api-client';
 import { aiChatService } from '@/features/ai-chat/services/ai-chat.service';
@@ -41,10 +44,12 @@ export default function AiChatPage() {
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [status, setStatus] = useState<AiStatusResponse | null>(null);
+  const [premiumOpen, setPremiumOpen] = useState(false);
   const messagePanelRef = useRef<HTMLDivElement>(null);
+  const hasAiAccess = Boolean(user?.isPremium || user?.role === 'ADMIN');
 
   useEffect(() => {
-    if (!user) return;
+    if (!hasAiAccess) return;
     const timeout = window.setTimeout(() => {
       void aiChatService
         .getStatus()
@@ -52,9 +57,9 @@ export default function AiChatPage() {
         .catch(() => setStatus(null));
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [user]);
+  }, [hasAiAccess]);
 
-  const visibleStatus = user ? status : null;
+  const visibleStatus = hasAiAccess ? status : null;
 
   useEffect(() => {
     const panel = messagePanelRef.current;
@@ -64,7 +69,7 @@ export default function AiChatPage() {
   const sendMessage = async (event: React.FormEvent) => {
     event.preventDefault();
     const content = input.trim();
-    if (!content || sending || !user) return;
+    if (!content || sending || !hasAiAccess) return;
 
     const userMessage: AiChatMessage = { role: 'user', content };
     const conversation = [...messages, userMessage].slice(-20);
@@ -98,6 +103,7 @@ export default function AiChatPage() {
   return (
     <div className="min-h-screen bg-[#06090F] text-gt-text flex flex-col font-rajdhani selection:bg-gt-cyan selection:text-black">
       <Navbar />
+      <PremiumModal isOpen={premiumOpen} onClose={() => setPremiumOpen(false)} />
 
       <main className="pt-24 pb-16 flex-1 px-4 md:px-8">
         <div className="max-w-6xl mx-auto">
@@ -164,6 +170,29 @@ export default function AiChatPage() {
                     <p className="text-gt-text-dim text-sm">
                       AI Coach được bảo vệ bởi tài khoản GameTrust. Hãy đăng nhập ở thanh điều hướng để bắt đầu.
                     </p>
+                  </div>
+                </div>
+              ) : !authLoading && user && !hasAiAccess ? (
+                <div className="flex-1 flex items-center justify-center p-8 text-center">
+                  <div className="max-w-lg rounded-sm border border-yellow-400/60 bg-yellow-400/5 p-8 shadow-[0_0_30px_rgba(250,204,21,0.12)]">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-sm border border-yellow-400/80 bg-yellow-400/10 text-yellow-400">
+                      <LockKeyhole size={28} />
+                    </div>
+                    <div className="mb-2 flex items-center justify-center gap-2 text-yellow-300">
+                      <Crown size={18} />
+                      <span className="font-orbitron text-xs font-black tracking-[0.2em]">PREMIUM ONLY</span>
+                    </div>
+                    <h2 className="font-orbitron text-xl font-bold text-white mb-3">AI COACH ĐANG BỊ KHÓA</h2>
+                    <p className="mb-6 text-sm leading-relaxed text-gt-text-dim">
+                      AI Coach là quyền lợi dành riêng cho hội viên Premium. Tài khoản Member thường không thể gọi API AI.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setPremiumOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-sm border border-yellow-300 bg-yellow-400 px-5 py-3 font-orbitron text-xs font-black text-black shadow-[0_0_18px_rgba(250,204,21,0.4)] transition hover:brightness-110 cursor-pointer"
+                    >
+                      <Crown size={16} /> NÂNG CẤP PREMIUM
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -243,12 +272,12 @@ export default function AiChatPage() {
                         }}
                         placeholder="Hỏi AI Coach về chiến thuật, combo, phản xạ..."
                         rows={2}
-                        disabled={!user || sending}
+                        disabled={!hasAiAccess || sending}
                         className="flex-1 resize-none bg-gt-bg border border-gt-border focus:border-gt-cyan outline-none rounded-sm px-4 py-2.5 text-sm text-white placeholder:text-gt-text-dim disabled:opacity-50"
                       />
                       <button
                         type="submit"
-                        disabled={!user || sending || !input.trim()}
+                        disabled={!hasAiAccess || sending || !input.trim()}
                         className="w-14 bg-gt-cyan text-black flex items-center justify-center rounded-sm hover:shadow-[0_0_16px_rgba(0,240,255,0.55)] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                         title="Gửi tin nhắn"
                       >
@@ -274,7 +303,7 @@ export default function AiChatPage() {
                       key={suggestion}
                       type="button"
                       onClick={() => setInput(suggestion)}
-                      disabled={!user || sending}
+                      disabled={!hasAiAccess || sending}
                       className="w-full text-left p-2.5 border border-gt-border hover:border-gt-cyan/60 bg-black/20 hover:bg-gt-cyan/5 text-xs text-gt-text-dim hover:text-white rounded-sm transition-colors disabled:opacity-40 cursor-pointer"
                     >
                       {suggestion}

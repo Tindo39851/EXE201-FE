@@ -2,7 +2,12 @@
 
 import React, { useState } from 'react';
 import { X, Mic, Users, Shield } from 'lucide-react';
-import type { CreateRoomDto, RoomVisibility, VoiceRoom } from '../types/voice.types';
+import type {
+  CreateRoomDto,
+  RoomPersonalityTag,
+  RoomVisibility,
+  VoiceRoom,
+} from '../types/voice.types';
 import { getApiErrorMessage } from '@/services/api-client';
 
 interface CreateRoomModalProps {
@@ -45,6 +50,18 @@ export const GAME_RANK_DATA: Record<string, { ranks: string[]; playstyles: strin
   },
 };
 
+export const ROOM_PERSONALITY_TAGS: RoomPersonalityTag[] = [
+  'Vui vẻ',
+  'Chill',
+  'Nói nhiều',
+  'Có mic',
+  'Tryhard',
+  'Căng thẳng',
+  'Chửi tục nhiều',
+  'Không toxic',
+  'Ít nói',
+];
+
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   isOpen,
   onClose,
@@ -56,6 +73,8 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const [playstyle, setPlaystyle] = useState('Leo Rank (Climbing)');
   const [capacity, setCapacity] = useState(5);
   const [visibility, setVisibility] = useState<RoomVisibility>('Public');
+  const [personalityTags, setPersonalityTags] = useState<RoomPersonalityTag[]>([]);
+  const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -69,6 +88,14 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     // Default to a popular mid-high rank for that game
     setRank(targetData.ranks[5] || targetData.ranks[0]);
     setPlaystyle(targetData.playstyles[1] || targetData.playstyles[0]);
+  };
+
+  const togglePersonalityTag = (tag: RoomPersonalityTag) => {
+    setPersonalityTags(current => {
+      if (current.includes(tag)) return current.filter(item => item !== tag);
+      if (current.length >= 5) return current;
+      return [...current, tag];
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,7 +113,12 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         playMode: playstyle,
         capacity,
         visibility,
+        personalityTags,
+        description: description.trim() || undefined,
       });
+      setName('');
+      setPersonalityTags([]);
+      setDescription('');
       onClose();
     } catch (error: unknown) {
       setSubmitError(getApiErrorMessage(error, 'Không thể tạo voice room. Vui lòng thử lại.'));
@@ -97,7 +129,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-lg bg-[#0B0F17] border border-gt-cyan/40 rounded-2xl shadow-[0_0_50px_rgba(0,240,255,0.15)] overflow-hidden">
+      <div className="relative w-full max-w-lg max-h-[92vh] bg-[#0B0F17] border border-gt-cyan/40 rounded-2xl shadow-[0_0_50px_rgba(0,240,255,0.15)] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-800">
           <div className="flex items-center gap-3">
@@ -136,6 +168,59 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               value={name}
               onChange={e => setName(e.target.value)}
               className="w-full bg-[#121824] border border-gray-800 focus:border-gt-cyan rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-500 font-rajdhani font-semibold outline-none transition-colors"
+            />
+          </div>
+
+          {/* Room Personality */}
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <label className="block text-xs font-mono text-gray-300 uppercase tracking-wider">
+                Tính cách phòng
+              </label>
+              <span className="text-[10px] font-mono text-gray-500">
+                Chọn tối đa 5 ({personalityTags.length}/5)
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {ROOM_PERSONALITY_TAGS.map(tag => {
+                const selected = personalityTags.includes(tag);
+                const disabled = !selected && personalityTags.length >= 5;
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    aria-pressed={selected}
+                    disabled={disabled}
+                    onClick={() => togglePersonalityTag(tag)}
+                    className={`px-3 py-1.5 rounded-full border text-[11px] font-mono transition-all ${
+                      selected
+                        ? 'border-gt-magenta bg-gt-magenta/15 text-pink-300 shadow-[0_0_10px_rgba(255,0,128,0.18)]'
+                        : 'border-gray-800 bg-[#121824] text-gray-400 hover:border-gt-cyan/50 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Optional Description */}
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <label htmlFor="room-description" className="block text-xs font-mono text-gray-300 uppercase tracking-wider">
+                Mô tả phòng <span className="normal-case text-gray-500">(không bắt buộc)</span>
+              </label>
+              <span className="text-[10px] font-mono text-gray-500">{description.length}/300</span>
+            </div>
+            <textarea
+              id="room-description"
+              rows={3}
+              maxLength={300}
+              placeholder="Ví dụ: Team vui vẻ, ưu tiên người có mic, chơi nghiêm túc nhưng không toxic..."
+              value={description}
+              onChange={event => setDescription(event.target.value)}
+              className="w-full resize-none bg-[#121824] border border-gray-800 focus:border-gt-cyan rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-500 font-rajdhani font-medium outline-none transition-colors"
             />
           </div>
 

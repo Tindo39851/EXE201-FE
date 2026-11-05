@@ -16,6 +16,17 @@ export interface VoiceMember {
 
 export type RoomTag = string;
 
+export type RoomPersonalityTag =
+  | 'Vui vẻ'
+  | 'Chill'
+  | 'Nói nhiều'
+  | 'Có mic'
+  | 'Tryhard'
+  | 'Căng thẳng'
+  | 'Chửi tục nhiều'
+  | 'Không toxic'
+  | 'Ít nói';
+
 export type RoomVisibility = 'Public' | 'Clan Only' | 'Rank Tryhard' | 'Private';
 
 export interface VoiceRoom {
@@ -26,6 +37,8 @@ export interface VoiceRoom {
   tag: RoomTag;
   rankRequirement?: string;
   playMode?: string;
+  personalityTags?: RoomPersonalityTag[];
+  description?: string;
   visibility: RoomVisibility;
   ping: number; // in ms
   capacity: number;
@@ -63,6 +76,8 @@ export interface CreateRoomDto {
   tag?: RoomTag;
   rankRequirement?: string;
   playMode?: string;
+  personalityTags?: RoomPersonalityTag[];
+  description?: string;
   capacity: number;
   visibility?: RoomVisibility;
 }

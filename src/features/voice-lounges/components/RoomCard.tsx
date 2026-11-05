@@ -111,6 +111,31 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onJoin }) => {
           </div>
         </div>
 
+        {(room.personalityTags?.length || room.description) && (
+          <div className="mb-5 space-y-2">
+            {!!room.personalityTags?.length && (
+              <div className="flex flex-wrap gap-1.5">
+                {room.personalityTags.map(tag => (
+                  <span
+                    key={tag}
+                    className="px-2 py-0.5 rounded-full border border-gt-magenta/30 bg-gt-magenta/10 text-[10px] font-mono text-pink-300"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            {room.description && (
+              <p
+                title={room.description}
+                className="text-xs leading-relaxed text-gray-400 font-rajdhani line-clamp-2 break-words"
+              >
+                {room.description}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Avatars Row & Capacity */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
