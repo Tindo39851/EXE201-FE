@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Exo_2, Be_Vietnam_Pro, Share_Tech_Mono } from "next/font/google";
 import "./globals.css";
 import "@livekit/components-styles";
@@ -38,6 +39,15 @@ export default function RootLayout({
       <body
         className={`${exo2.variable} ${beVietnamPro.variable} ${shareTechMono.variable} bg-gt-bg text-gt-text font-rajdhani antialiased`}
       >
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-Z20J36G2SD" strategy="afterInteractive" />
+        <Script id="ga4-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){window.dataLayer.push(arguments);}
+            gtag("js", new Date());
+            gtag("config", "G-Z20J36G2SD");
+          `}
+        </Script>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
